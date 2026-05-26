@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CRYPTIC CODEX — Spectral Instrument Array</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+/* ─── DESIGN TOKENS ─── */
+:root {
+  --bg:        #000000;
+  --panel:     #020a02;
+  --panel2:    #010801;
+  --border:    rgba(0,255,65,0.12);
+  --border-hi: rgba(0,255,65,0.35);
+
+  /* colour ontology */
+  --green:   #00ff41;  /* SID / guidance */
+  --green-d: #005c15;
+  --green-f: #001a06;
+  --blue:    #00cfff;  /* apparatus / infrastructure */
+  --blue-d:  #004a66;
+  --blue-f:  #001620;
+  --red:     #ff2233;  /* corruption / escalation */
+  --red-d:   #660010;
+  --red-f:   #1a0005;
+  --purple:  #cc44ff;  /* observatory / anomaly */
+  --purple-d:#440066;
+  --purple-f:#0f0018;
+  --amber:   #ffcc00;  /* shrine / witness */
+  --amber-d: #664f00;
+  --amber-f: #1a1400;
+
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Orbitron', monospace;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body {
+  background:var(--bg);
+  color:var(--green);
+  font-family:var(--mono);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* scanline overlay */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:9999;
+  pointer-events:none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 2px,
+    rgba(0,255,65,0.022) 2px, rgba(0,255,65,0.022) 4px
+  );
+}
+/* vignette */
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:9998;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.9) 100%);
+}
+
+/* ─── PAGE HEADER ─── */
+#sia-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px 10px;
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100; background:var(--bg);
+}
+.sia-title { font-family:var(--display); font-size:11px; font-weight:900; letter-spacing:5px; }
+.sia-meta  { font-size:9px; color:var(--green-d); letter-spacing:2px; }
+.blink { animation:blink 1s step-end infinite; }
+@keyframes blink { 50%{opacity:0} }
+
+/* ─── GRID ─── */
+#sia-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px,1fr));
+  gap:1px;
+  background:var(--border);
+  border-top:1px solid var(--border);
+}
+
+/* ─── INSTRUMENT SHELL ─── */
+.inst {
+  background:var(--panel);
+  padding:0;
+  position:relative;
+  overflow:hidden;
+  display:flex; flex-direction:column;
+}
+.inst::before { /* CRT scanlines per card */
+  content:'';
+  position:absolute; inset:0;
+  pointer-events:none; z-index:10;
+  background:repeating-linear-gradient(
+    to bottom, transparent 0px, transparent 3px,
+    rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px
+  );
+}
+
+/* instrument header */
+.inst-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px 6px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel2);
+}
+.inst-hdr-left { display:flex; flex-direction:column; gap:2px; }
+.inst-tag {
+  font-family:var(--display); font-size:8px; font-weight:700;
+  letter-spacing:3px; color:var(--accent, var(--green));
+}
+.inst-fn { font-size:8px; color:var(--green-d); letter-spacing:1px; }
+.inst-hdr-right { display:flex; align-items:center; gap:8px; }
+.shortcut {
+  font-size:8px; color:var(--accent,var(--green));
+  border:1px solid var(--accent,var(--green)); padding:1px 6px;
+  opacity:0.6;
+}
+.inst-led {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--accent, var(--green));
+}
+
+/* instrument body */
+.inst-body { flex:1; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+
+/* primary display row */
+.primary-row { display:flex; gap:8px; align-items:stretch; }
+.readout-box {
+  background:var(--panel2);
+  border:1px solid var(--border);
+  padding:8px 10px;
+  display:flex; flex-direction:column; gap:2px;
+  min-width:80px;
+}
+.rdx-label { font-size:7px; color:var(--green-d); letter-spacing:2px; }
+.rdx-value {
+  font-family:var(--display); font-size:22px; font-weight:700;
+  color:var(--accent,var(--green)); line-height:1;
+  text-shadow:0 0 12px var(--accent,var(--green));
+}
+.rdx-unit { font-size:8px; color:var(--green-d); }
+
+/* status strip */
+.status-strip {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 8px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  font-size:8px; color:var(--green-d); letter-spacing:2px;
+}
+.status-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--accent,var(--green)); flex-shrink:0;
+}
+
+/* canvas display */
+.wave-canvas {
+  width:100%; display:block;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  image-rendering:pixelated;
+}
+
+/* control row */
+.ctrl-row {
+  display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+}
+.ctrl-btn {
+  font-family:var(--mono); font-size:8px; letter-spacing:1px;
+  background:transparent; border:1px solid var(--border-hi);
+  color:var(--accent,var(--green)); padding:3px 8px; cursor:pointer;
+  transition:background 0.15s;
+}
+.ctrl-btn:hover { background:var(--green-f); }
+.ctrl-btn.armed { background:var(--green-f); border-color:var(--accent,var(--green)); }
+
+/* slider row */
+.slider-row { display:flex; gap:8px; align-items:center; }
+.slider-label { font-size:7px; color:var(--green-d); letter-spacing:1px; white-space:nowrap; width:60px; }
+.slider-wrap { flex:1; position:relative; }
+input[type=range] {
+  -webkit-appearance:none; appearance:none;
+  width:100%; height:2px;
+  background:var(--panel2); border:1px solid var(--border);
+  outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none;
+  width:10px; height:10px;
+  background:var(--accent,var(--green));
+  border-radius:0; cursor:pointer;
+  box-shadow:0 0 6px var(--accent,var(--green));
+}
+.slider-val { font-size:8px; color:var(--accent,var(--green)); width:28px; text-align:right; }
+
+/* mini grid for sub-readouts */
+.mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.mini-readout {
+  background:var(--panel2); border:1px solid var(--border);
+  padding:5px 7px;
+}
+.mini-lbl { font-size:7px; color:var(--green-d); letter-spacing:1px; }
+.mini-val { font-family:var(--display); font-size:12px; color:var(--accent,var(--green)); }
+
+/* anomaly flash overlay */
+.anomaly-flash {
+  position:absolute; inset:0; z-index:5; pointer-events:none;
+  background:var(--accent,var(--green));
+  opacity:0;
+  transition:opacity 0.05s;
+}
+.anomaly-flash.fire { animation:aFlash 0.2s ease-out forwards; }
+@keyframes aFlash { 0%{opacity:0.12} 100%{opacity:0} }
+
+/* warning banner */
+.warn-banner {
+  display:none; align-items:center; gap:6px;
+  padding:4px 8px; font-size:8px; letter-spacing:2px;
+  background:var(--red-f); border:1px solid var(--red-d);
+  color:var(--red); animation:warnPulse 0.6s step-end infinite;
+}
+.warn-banner.show { display:flex; }
+@keyframes warnPulse { 50%{opacity:0.5} }
+
+/* ─── EMF specific ─── */
+#emf { --accent:var(--green); }
+
+/* ─── THERMAL specific ─── */
+#thermal { --accent:var(--blue); }
+
+/* ─── SLS specific ─── */
+#sls { --accent:var(--amber); }
+
+/* ─── EVP specific ─── */
+#evp { --accent:var(--purple); }
+
+/* ─── SPATIAL specific ─── */
+#spatial { --accent:var(--blue); }
+
+/* ─── RESONANCE specific ─── */
+#resonance { --accent:var(--purple); }
+
+/* ─── HAUNT specific ─── */
+#haunt { --accent:var(--red); }
+
+/* ─── ECHO specific ─── */
+#echo { --accent:var(--amber); }
+
+/* ─── SLS skeleton canvas ─── */
+#sls-skeleton { border:1px solid var(--border); background:#01080d; }
+
+/* ─── Thermal heatmap ─── */
+#thermal-map { border:1px solid var(--border); }
+
+/* ─── Progress bars ─── */
+.prog-bar {
+  height:3px; background:var(--panel2); border:1px solid var(--border);
+  overflow:hidden; position:relative;
+}
+.prog-fill {
+  height:100%;
+  background:var(--accent,var(--green));
+  box-shadow:0 0 6px var(--accent,var(--green));
+  transition:width 0.4s ease;
+  position:relative;
+}
+
+/* ─── Frequency band (EVP) ─── */
+.freq-bands { display:flex; gap:2px; align-items:flex-end; height:40px; }
+.freq-band {
+  flex:1; background:var(--purple-d);
+  transition:height 0.15s ease;
+  min-height:2px; position:relative;
+}
+
+/* ─── Spatial grid ─── */
+#spatial-grid-canvas { border:1px solid var(--border-hi); background:#000813; }
+
+/* ─── Echo trace ─── */
+#echo-canvas { border:1px solid var(--border); background:#0a0800; }
+
+/* ─── Resonance ring ─── */
+#resonance-canvas { border:1px solid var(--border); background:var(--purple-f); }
+
+/* ─── Haunt meter ─── */
+#haunt-gauge { border:1px solid var(--border); background:var(--red-f); }
+
+/* scrollbar */
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-thumb { background:var(--green-f); }
+</style>
+</head>
+<body>
+
+<div id="sia-header">
+  <div>
+    <div class="sia-title">CRYPTIC CODEX — SPECTRAL INSTRUMENT ARRAY</div>
+    <div class="sia-meta" style="margin-top:3px;">FIELD OPS MODULE · ANOMALY OBSERVABILITY SYSTEM · BUILD 2.4.1</div>
+  </div>
+  <div class="sia-meta">INSTRUMENTS: 8 · STATUS: <span style="color:var(--green)">ONLINE</span> <span class="blink">▮</span></div>
+</div>
+
+<div id="sia-grid">
+
+<!-- ══════════════════════════════════════════
+     1. EMF PRESSURE METER
+══════════════════════════════════════════ -->
+<div class="inst" id="emf">
+  <div class="anomaly-flash" id="emf-flash"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">EMF PRESSURE METER</div>
+      <div class="inst-fn">Electromagnetic field anomaly detection · local space pressure</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut">:emf</span>
+      <div class="inst-led" id="emf-led" style="animation:blink 1.2s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="emf-warn">⚠ EMF SPIKE DETECTED — FIELD INSTABILITY</div>
+
+    <div class="primary-row">
+      <div class="readout-box" style="min-width:90px">
+        <div class="rdx-label">FIELD mG</div>
+        <div class="rdx-value" id="emf-val">0.0</div>
+        <div class="rdx-unit">milligauss</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+        <canvas class="wave-canvas" id="emf-wave" height="52"></canvas>
+        <div class="prog-bar"><div class="prog-fill" id="emf-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="mini-grid">
+      <div class="mini-readout">
+        <div class="mini-lbl">PEAK mG</div>
+        <div class="mini-val" id="emf-peak">0.0</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">VARIANCE</div>
+        <div class="mini-val" id="emf-var">±0.00</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">POLARITY</div>
+        <div class="mini-val" id="emf-pol">+</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">COHERENCE</div>
+        <div class="mini-val" id="emf-coh">—</div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">SENSITIVITY</div>
+      <div class="slider-wrap">
+        <input type="range" id="emf-sens" min="1" max="10" value="5" step="1">
+      </div>
+      <div class="slider-val" id="emf-sens-val">5</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="emf-zero">ZERO CAL</button>
+      <button class="ctrl-btn" id="emf-lock">LOCK PEAK</button>
+      <button class="ctrl-btn" id="emf-sweep">AUTO SWEEP</button>
+      <div class="status-strip" style="flex:1">
+        <div class="status-dot" id="emf-sdot"></div>
+        <span id="emf-status">NOMINAL</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     2. THERMAL INTEGRITY SCANNER
+══════════════════════════════════════════ -->
+<div class="inst" id="thermal">
+  <div class="anomaly-flash" id="thermal-flash"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">THERMAL INTEGRITY SCANNER</div>
+      <div class="inst-fn">Cold spot formation · spectral thermal variance mapping</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut">:tis</span>
+      <div class="inst-led" style="background:var(--blue); animation:blink 1.6s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="thermal-warn" style="border-color:var(--blue-d);color:var(--blue);background:var(--blue-f)">
+      ⚠ COLD BREACH DETECTED — THERMAL LAYER COMPROMISED
+    </div>
+
+    <div class="primary-row">
+      <div class="readout-box" style="min-width:80px">
+        <div class="rdx-label">TEMP Δ°C</div>
+        <div class="rdx-value" id="thermal-val" style="color:var(--blue);text-shadow:0 0 12px var(--blue)">+0.0</div>
+        <div class="rdx-unit">delta celsius</div>
+      </div>
+      <div style="flex:1">
+        <canvas id="thermal-map" height="68" style="width:100%;display:block;"></canvas>
+      </div>
+    </div>
+
+    <div class="mini-grid">
+      <div class="mini-readout">
+        <div class="mini-lbl">COLD SPOT °C</div>
+        <div class="mini-val" id="thermal-cold" style="color:var(--blue)">—</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">HOT ZONE °C</div>
+        <div class="mini-val" id="thermal-hot" style="color:var(--red)">—</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">INTEGRITY</div>
+        <div class="mini-val" id="thermal-int" style="color:var(--blue)">—%</div>
+      </div>
+      <div class="mini-readout">
+        <div class="mini-lbl">LAYER DEPTH</div>
+        <div class="mini-val" id="thermal-depth" style="color:var(--blue)">—m</div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">SCAN DEPTH</div>
+      <div class="slider-wrap">
+        <input type="range" id="thermal-depth-sl" min="1" max="20" value="8" step="1" style="--accent:var(--blue)">
+      </div>
+      <div class="slider-val" id="thermal-depth-val" style="color:var(--blue)">8m</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--blue);border-color:var(--blue-d)" id="thermal-sweep">SWEEP</button>
+      <button class="ctrl-btn" style="color:var(--blue);border-color:var(--blue-d)" id="thermal-lock">LOCK ZONE</button>
+      <div class="status-strip" style="flex:1;border-color:var(--blue-d)">
+        <div class="status-dot" style="background:var(--blue)" id="thermal-sdot"></div>
+        <span id="thermal-status" style="color:var(--blue-d)">SCANNING</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     3. SLS LATTICE SCANNER
+══════════════════════════════════════════ -->
+<div class="inst" id="sls">
+  <div class="anomaly-flash" id="sls-flash" style="background:var(--amber)"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">SLS LATTICE SCANNER</div>
+      <div class="inst-fn">Structured light skeletal mapping · non-visible form detection</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut" style="color:var(--amber);border-color:var(--amber)">:sls</span>
+      <div class="inst-led" style="background:var(--amber); animation:blink 0.9s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="sls-warn" style="border-color:var(--amber-d);color:var(--amber);background:var(--amber-f)">
+      ⚠ FORM DETECTED — LATTICE LOCK ACTIVE
+    </div>
+
+    <div class="primary-row">
+      <div style="flex:1">
+        <canvas id="sls-skeleton" height="110" style="width:100%;display:block;"></canvas>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:70px">
+        <div class="readout-box">
+          <div class="rdx-label">FORMS</div>
+          <div class="rdx-value" id="sls-forms" style="color:var(--amber);text-shadow:0 0 12px var(--amber);font-size:26px">0</div>
+        </div>
+        <div class="mini-readout">
+          <div class="mini-lbl">NODES</div>
+          <div class="mini-val" id="sls-nodes" style="color:var(--amber)">0</div>
+        </div>
+        <div class="mini-readout">
+          <div class="mini-lbl">CONF%</div>
+          <div class="mini-val" id="sls-conf" style="color:var(--amber)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">LATTICE RES</div>
+      <div class="slider-wrap">
+        <input type="range" id="sls-res" min="1" max="10" value="6" step="1">
+      </div>
+      <div class="slider-val" id="sls-res-val" style="color:var(--amber)">6</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--amber);border-color:var(--amber-d)" id="sls-scan">SCAN</button>
+      <button class="ctrl-btn" style="color:var(--amber);border-color:var(--amber-d)" id="sls-freeze">FREEZE</button>
+      <div class="status-strip" style="flex:1;border-color:var(--amber-d)">
+        <div class="status-dot" style="background:var(--amber)"></div>
+        <span id="sls-status" style="color:var(--amber-d)">SWEEPING</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     4. EVP / SPIRIT BOX
+══════════════════════════════════════════ -->
+<div class="inst" id="evp">
+  <div class="anomaly-flash" id="evp-flash" style="background:var(--purple)"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">EVP SIGNAL / SPIRIT BOX</div>
+      <div class="inst-fn">Electronic voice phenomena · ITC frequency band scan</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut" style="color:var(--purple);border-color:var(--purple)">:evp</span>
+      <div class="inst-led" style="background:var(--purple); animation:blink 0.7s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="evp-warn" style="border-color:var(--purple-d);color:var(--purple);background:var(--purple-f)">
+      ⚠ VOICE BAND LOCK — ITC SIGNAL COHERENT
+    </div>
+
+    <canvas class="wave-canvas" id="evp-wave" height="56" style="border-color:var(--purple-d)"></canvas>
+
+    <div class="freq-bands" id="evp-bands"></div>
+
+    <div class="primary-row">
+      <div class="readout-box" style="min-width:80px">
+        <div class="rdx-label">SIGNAL dB</div>
+        <div class="rdx-value" id="evp-val" style="color:var(--purple);text-shadow:0 0 12px var(--purple)">—</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="mini-grid">
+          <div class="mini-readout">
+            <div class="mini-lbl">FREQ Hz</div>
+            <div class="mini-val" id="evp-freq" style="color:var(--purple)">—</div>
+          </div>
+          <div class="mini-readout">
+            <div class="mini-lbl">COHERENCE</div>
+            <div class="mini-val" id="evp-coh" style="color:var(--purple)">—%</div>
+          </div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="evp-bar" style="width:0%;background:var(--purple);box-shadow:0 0 6px var(--purple)"></div></div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">SCAN RATE</div>
+      <div class="slider-wrap">
+        <input type="range" id="evp-rate" min="1" max="10" value="4" step="1">
+      </div>
+      <div class="slider-val" id="evp-rate-val" style="color:var(--purple)">4</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--purple);border-color:var(--purple-d)" id="evp-rec">● REC</button>
+      <button class="ctrl-btn" style="color:var(--purple);border-color:var(--purple-d)" id="evp-itc">ITC MODE</button>
+      <button class="ctrl-btn" style="color:var(--purple);border-color:var(--purple-d)" id="evp-filter">NOISE FILTER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     5. SPATIAL RIFT SCANNER
+══════════════════════════════════════════ -->
+<div class="inst" id="spatial">
+  <div class="anomaly-flash" id="spatial-flash"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">SPATIAL RIFT SCANNER</div>
+      <div class="inst-fn">Spacetime geometry monitoring · fold anomaly · rift index</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut">:sds</span>
+      <div class="inst-led" style="background:var(--blue); animation:blink 2s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="spatial-warn" style="border-color:var(--blue-d);color:var(--blue);background:var(--blue-f)">
+      ⚠ RIFT INDEX CRITICAL — PATHWAY UNSTABLE
+    </div>
+
+    <canvas id="spatial-grid-canvas" height="100" style="width:100%;display:block;"></canvas>
+
+    <div class="primary-row">
+      <div class="readout-box" style="min-width:80px">
+        <div class="rdx-label">RIFT IDX</div>
+        <div class="rdx-value" id="spatial-val" style="color:var(--blue);text-shadow:0 0 12px var(--blue)">0.00</div>
+        <div class="rdx-unit">RI units</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="mini-grid">
+          <div class="mini-readout">
+            <div class="mini-lbl">FOLD Δ</div>
+            <div class="mini-val" id="spatial-fold" style="color:var(--blue)">—</div>
+          </div>
+          <div class="mini-readout">
+            <div class="mini-lbl">PATHWAY</div>
+            <div class="mini-val" id="spatial-path" style="color:var(--blue)">STABLE</div>
+          </div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="spatial-bar" style="width:0%;background:var(--blue);box-shadow:0 0 6px var(--blue)"></div></div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">SCAN DEPTH</div>
+      <div class="slider-wrap">
+        <input type="range" id="spatial-depth" min="1" max="10" value="5" step="1">
+      </div>
+      <div class="slider-val" id="spatial-depth-val" style="color:var(--blue)">5</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--blue);border-color:var(--blue-d)" id="spatial-probe">PROBE</button>
+      <button class="ctrl-btn" style="color:var(--blue);border-color:var(--blue-d)" id="spatial-anchor">ANCHOR</button>
+      <div class="status-strip" style="flex:1;border-color:var(--blue-d)">
+        <div class="status-dot" style="background:var(--blue)"></div>
+        <span id="spatial-status" style="color:var(--blue-d)">SCANNING</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     6. GHOUL RESONANCE INDEX
+══════════════════════════════════════════ -->
+<div class="inst" id="resonance">
+  <div class="anomaly-flash" id="res-flash" style="background:var(--purple)"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">GHOUL RESONANCE INDEX</div>
+      <div class="inst-fn">Entity resonance · spectral codex baseline comparison</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut" style="color:var(--purple);border-color:var(--purple)">:gri</span>
+      <div class="inst-led" style="background:var(--purple); animation:blink 1.4s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="res-warn" style="border-color:var(--purple-d);color:var(--purple);background:var(--purple-f)">
+      ⚠ ENTITY RESONANCE LOCK — CODEX MATCH CONFIRMED
+    </div>
+
+    <div class="primary-row">
+      <canvas id="resonance-canvas" height="110" style="width:140px;flex-shrink:0;display:block;"></canvas>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="readout-box">
+          <div class="rdx-label">GRI SCORE</div>
+          <div class="rdx-value" id="res-val" style="color:var(--purple);text-shadow:0 0 12px var(--purple)">0.0</div>
+          <div class="rdx-unit">resonance units</div>
+        </div>
+        <div class="mini-grid">
+          <div class="mini-readout">
+            <div class="mini-lbl">BASELINE</div>
+            <div class="mini-val" id="res-base" style="color:var(--purple)">3.5</div>
+          </div>
+          <div class="mini-readout">
+            <div class="mini-lbl">DELTA</div>
+            <div class="mini-val" id="res-delta" style="color:var(--purple)">+0.0</div>
+          </div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="res-bar" style="width:0%;background:var(--purple);box-shadow:0 0 6px var(--purple)"></div></div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">SENSITIVITY</div>
+      <div class="slider-wrap">
+        <input type="range" id="res-sens" min="1" max="10" value="5" step="1">
+      </div>
+      <div class="slider-val" id="res-sens-val" style="color:var(--purple)">5</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--purple);border-color:var(--purple-d)" id="res-calibrate">CALIBRATE</button>
+      <button class="ctrl-btn" style="color:var(--purple);border-color:var(--purple-d)" id="res-lock">LOCK SIG</button>
+      <div class="status-strip" style="flex:1;border-color:var(--purple-d)">
+        <div class="status-dot" style="background:var(--purple)"></div>
+        <span id="res-status" style="color:var(--purple-d)">MONITORING</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     7. HAUNT PRESSURE METER
+══════════════════════════════════════════ -->
+<div class="inst" id="haunt">
+  <div class="anomaly-flash" id="haunt-flash" style="background:var(--red)"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">HAUNT PRESSURE METER</div>
+      <div class="inst-fn">Psychokinetic pressure build-up · local haunt field aggregation</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut" style="color:var(--red);border-color:var(--red)">:hpm</span>
+      <div class="inst-led" style="background:var(--red); animation:blink 0.5s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="haunt-warn" style="border-color:var(--red-d);color:var(--red);background:var(--red-f)">
+      ⚠ EXTREME HAUNT PRESSURE — FIELD SATURATION IMMINENT
+    </div>
+
+    <div class="primary-row">
+      <canvas id="haunt-gauge" height="110" style="width:120px;flex-shrink:0;display:block;"></canvas>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="readout-box">
+          <div class="rdx-label">PRESSURE hPa</div>
+          <div class="rdx-value" id="haunt-val" style="color:var(--red);text-shadow:0 0 12px var(--red)">0</div>
+          <div class="rdx-unit">haunt pascal</div>
+        </div>
+        <div class="mini-grid">
+          <div class="mini-readout">
+            <div class="mini-lbl">PK INDEX</div>
+            <div class="mini-val" id="haunt-pk" style="color:var(--red)">—</div>
+          </div>
+          <div class="mini-readout">
+            <div class="mini-lbl">SATURATION</div>
+            <div class="mini-val" id="haunt-sat" style="color:var(--red)">—%</div>
+          </div>
+        </div>
+        <canvas class="wave-canvas" id="haunt-wave" height="32" style="border-color:var(--red-d)"></canvas>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--red);border-color:var(--red-d)" id="haunt-purge">FIELD PURGE</button>
+      <button class="ctrl-btn" style="color:var(--red);border-color:var(--red-d)" id="haunt-anchor">ANCHOR ZONE</button>
+      <div class="status-strip" style="flex:1;border-color:var(--red-d)">
+        <div class="status-dot" style="background:var(--red)" id="haunt-sdot"></div>
+        <span id="haunt-status" style="color:var(--red-d)">NOMINAL</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     8. ECHO TRACE ENGINE
+══════════════════════════════════════════ -->
+<div class="inst" id="echo">
+  <div class="anomaly-flash" id="echo-flash" style="background:var(--amber)"></div>
+  <div class="inst-hdr">
+    <div class="inst-hdr-left">
+      <div class="inst-tag">ECHO TRACE ENGINE</div>
+      <div class="inst-fn">Residual temporal echo capture · imprinted spectral event replay</div>
+    </div>
+    <div class="inst-hdr-right">
+      <span class="shortcut" style="color:var(--amber);border-color:var(--amber)">:ete</span>
+      <div class="inst-led" style="background:var(--amber); animation:blink 1.8s step-end infinite"></div>
+    </div>
+  </div>
+  <div class="inst-body">
+    <div class="warn-banner" id="echo-warn" style="border-color:var(--amber-d);color:var(--amber);background:var(--amber-f)">
+      ⚠ TEMPORAL ECHO DETECTED — IMPRINT ACTIVE
+    </div>
+
+    <canvas id="echo-canvas" height="80" style="width:100%;display:block;"></canvas>
+
+    <div class="primary-row">
+      <div class="readout-box" style="min-width:80px">
+        <div class="rdx-label">TRACES</div>
+        <div class="rdx-value" id="echo-val" style="color:var(--amber);text-shadow:0 0 12px var(--amber)">0</div>
+        <div class="rdx-unit">active echoes</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="mini-grid">
+          <div class="mini-readout">
+            <div class="mini-lbl">AGE EST</div>
+            <div class="mini-val" id="echo-age" style="color:var(--amber)">—</div>
+          </div>
+          <div class="mini-readout">
+            <div class="mini-lbl">FIDELITY</div>
+            <div class="mini-val" id="echo-fid" style="color:var(--amber)">—%</div>
+          </div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="echo-bar" style="width:0%;background:var(--amber);box-shadow:0 0 6px var(--amber)"></div></div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">TRACE DEPTH</div>
+      <div class="slider-wrap">
+        <input type="range" id="echo-depth" min="1" max="10" value="4" step="1">
+      </div>
+      <div class="slider-val" id="echo-depth-val" style="color:var(--amber)">4</div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" style="color:var(--amber);border-color:var(--amber-d)" id="echo-capture">CAPTURE</button>
+      <button class="ctrl-btn" style="color:var(--amber);border-color:var(--amber-d)" id="echo-replay">REPLAY</button>
+      <button class="ctrl-btn" style="color:var(--amber);border-color:var(--amber-d)" id="echo-clear">CLEAR</button>
+      <div class="status-strip" style="flex:1;border-color:var(--amber-d)">
+        <div class="status-dot" style="background:var(--amber)"></div>
+        <span id="echo-status" style="color:var(--amber-d)">LISTENING</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /sia-grid -->
+
+<!-- ══════════════════════════════════════════
+     INSTRUMENT ENGINE
+══════════════════════════════════════════ -->
+<script>
+// ─── UTILITIES ───────────────────────────────
+const R = (a,b) => a + Math.random()*(b-a);
+const Ri = (a,b) => Math.floor(R(a,b+1));
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const lerp = (a,b,t) => a+(b-a)*t;
+const $ = id => document.getElementById(id);
+
+function flash(id) {
+  const el = $(id);
+  if (!el) return;
+  el.classList.remove('fire');
+  void el.offsetWidth;
+  el.classList.add('fire');
+}
+
+function showWarn(id, show) {
+  const el = $(id);
+  if (el) el.classList.toggle('show', show);
+}
+
+function resizeCanvas(canvas) {
+  canvas.width = canvas.offsetWidth || parseInt(canvas.style.width) || 300;
+}
+
+// ─── 1. EMF PRESSURE METER ───────────────────
+(function() {
+  const canvas = $('emf-wave');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const history = new Array(W).fill(0);
+  let peak = 0, peakLocked = false, sweeping = false;
+  let sens = 5, current = 0, target = 0, variance = 0;
+
+  $('emf-sens').oninput = e => { sens = +e.target.value; $('emf-sens-val').textContent = sens; };
+  $('emf-zero').onclick = () => { peak = 0; peakLocked = false; };
+  $('emf-lock').onclick = function() { peakLocked = !peakLocked; this.classList.toggle('armed', peakLocked); };
+  $('emf-sweep').onclick = function() { sweeping = !sweeping; this.classList.toggle('armed', sweeping); };
+
+  function tick() {
+    // target wanders; spike randomly
+    if (Math.random() < 0.015 * (sens/5)) target = R(5, 9.8);
+    else if (Math.random() < 0.04) target = R(0.1, 3);
+    else target = lerp(target, R(0.5, 4), 0.08);
+
+    current = lerp(current, target, 0.12 + (sens/100));
+    variance = Math.abs(current - target);
+
+    if (!peakLocked && current > peak) peak = current;
+
+    history.shift(); history.push(current);
+
+    // draw
+    ctx.fillStyle = '#010801';
+    ctx.fillRect(0,0,W,H);
+
+    // grid lines
+    ctx.strokeStyle = 'rgba(0,255,65,0.07)';
+    ctx.lineWidth = 0.5;
+    for (let i=0;i<4;i++) { ctx.beginPath(); ctx.moveTo(0,H/4*i); ctx.lineTo(W,H/4*i); ctx.stroke(); }
+
+    // threshold line
+    ctx.strokeStyle = 'rgba(255,34,51,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(0,H*0.25); ctx.lineTo(W,H*0.25); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // waveform
+    ctx.beginPath();
+    history.forEach((v,i) => {
+      const y = H - (v/10)*H*0.9;
+      i===0 ? ctx.moveTo(i,y) : ctx.lineTo(i,y);
+    });
+    ctx.strokeStyle = current > 7 ? '#ff2233' : '#00ff41';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // glow fill
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, current>7 ? 'rgba(255,34,51,0.15)' : 'rgba(0,255,65,0.12)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    history.forEach((v,i) => {
+      const y = H - (v/10)*H*0.9;
+      i===0 ? ctx.moveTo(i,y) : ctx.lineTo(i,y);
+    });
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fill();
+
+    // update readouts
+    $('emf-val').textContent = current.toFixed(1);
+    $('emf-peak').textContent = peak.toFixed(1);
+    $('emf-var').textContent = '±' + variance.toFixed(2);
+    $('emf-pol').textContent = current > 5 ? (Math.random()<0.05?'-':'+') : '+';
+    $('emf-coh').textContent = current > 6 ? 'LOW' : current > 3 ? 'MED' : 'HIGH';
+    $('emf-bar').style.width = (current/10*100)+'%';
+    $('emf-bar').style.background = current>7 ? 'var(--red)' : 'var(--green)';
+
+    const isSpike = current > 7;
+    if (isSpike && Math.random()<0.1) flash('emf-flash');
+    showWarn('emf-warn', isSpike);
+    $('emf-status').textContent = current>7 ? 'CRITICAL' : current>4 ? 'ELEVATED' : 'NOMINAL';
+    $('emf-status').style.color = current>7 ? 'var(--red)' : current>4 ? 'var(--amber)' : 'var(--green-d)';
+    $('emf-sdot').style.background = current>7 ? 'var(--red)' : current>4 ? 'var(--amber)' : 'var(--green)';
+  }
+  setInterval(tick, 60);
+})();
+
+// ─── 2. THERMAL INTEGRITY SCANNER ────────────
+(function() {
+  const canvas = $('thermal-map');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const COLS = 40, ROWS = 12;
+  const grid = Array.from({length:ROWS}, () => Array(COLS).fill(20));
+  let scanX = 0, coldSpot = null, scanDepth = 8;
+  let currentDelta = 0, targetDelta = 15;
+
+  $('thermal-depth-sl').oninput = e => {
+    scanDepth = +e.target.value;
+    $('thermal-depth-val').textContent = scanDepth+'m';
+  };
+  $('thermal-sweep').onclick = () => { scanX = 0; };
+
+  function tempToColor(t) {
+    // -10 (deep blue) through 0 (teal) through 20 (green) to 40+ (red)
+    const n = clamp((t+10)/50, 0, 1);
+    if (n < 0.3) {
+      const f = n/0.3;
+      return `rgb(${Math.round(lerp(0,0,f))},${Math.round(lerp(100,200,f))},${Math.round(lerp(200,255,f))})`;
+    } else if (n < 0.6) {
+      const f = (n-0.3)/0.3;
+      return `rgb(${Math.round(lerp(0,0,f))},${Math.round(lerp(200,255,f))},${Math.round(lerp(255,0,f))})`;
+    } else {
+      const f = (n-0.6)/0.4;
+      return `rgb(${Math.round(lerp(0,255,f))},${Math.round(lerp(255,50,f))},0)`;
+    }
+  }
+
+  function tick() {
+    // evolve grid slowly
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+      grid[r][c] = lerp(grid[r][c], R(-5,35), 0.02);
+    }
+    // inject cold spot
+    if (Math.random()<0.005) {
+      const cr=Ri(1,ROWS-2), cc=Ri(2,COLS-3);
+      coldSpot={r:cr,c:cc,age:0};
+    }
+    if (coldSpot) {
+      for (let r=coldSpot.r-1;r<=coldSpot.r+1;r++)
+        for (let c=coldSpot.c-2;c<=coldSpot.c+2;c++)
+          if (r>=0&&r<ROWS&&c>=0&&c<COLS)
+            grid[r][c] = lerp(grid[r][c], -8, 0.1);
+      coldSpot.age++;
+      if (coldSpot.age > 80) coldSpot = null;
+    }
+
+    // scan sweep
+    scanX = (scanX+1)%COLS;
+
+    // draw heatmap
+    const cw = W/COLS, ch = H/ROWS;
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+      ctx.fillStyle = tempToColor(grid[r][c]);
+      ctx.globalAlpha = c===scanX ? 0.5 : 0.85;
+      ctx.fillRect(c*cw, r*ch, cw, ch);
+    }
+    ctx.globalAlpha = 1;
+
+    // scan line
+    ctx.fillStyle = 'rgba(0,207,255,0.6)';
+    ctx.fillRect(scanX*cw, 0, 2, H);
+
+    // grid overlay
+    ctx.strokeStyle = 'rgba(0,207,255,0.08)';
+    ctx.lineWidth = 0.5;
+    for (let r=0;r<=ROWS;r++) { ctx.beginPath(); ctx.moveTo(0,r*ch); ctx.lineTo(W,r*ch); ctx.stroke(); }
+    for (let c=0;c<=COLS;c++) { ctx.beginPath(); ctx.moveTo(c*cw,0); ctx.lineTo(c*cw,H); ctx.stroke(); }
+
+    // stats
+    const flat = grid.flat();
+    const minT = Math.min(...flat), maxT = Math.max(...flat);
+    const delta = maxT - minT;
+    currentDelta = lerp(currentDelta, delta, 0.1);
+    const integ = clamp(100-Math.abs(minT)*4, 0, 100);
+
+    $('thermal-val').textContent = (minT>0?'+':'')+minT.toFixed(1);
+    $('thermal-cold').textContent = minT.toFixed(1);
+    $('thermal-hot').textContent = maxT.toFixed(1);
+    $('thermal-int').textContent = integ.toFixed(0)+'%';
+    $('thermal-depth').textContent = scanDepth.toFixed(1)+'m';
+
+    const breach = minT < -4;
+    if (breach && Math.random()<0.08) flash('thermal-flash');
+    showWarn('thermal-warn', breach);
+    $('thermal-status').textContent = breach ? 'BREACH' : minT<2 ? 'COLD SPOT' : 'STABLE';
+  }
+  setInterval(tick, 80);
+})();
+
+// ─── 3. SLS LATTICE SCANNER ──────────────────
+(function() {
+  const canvas = $('sls-skeleton');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let entities = [], frameCount = 0, frozen = false, resolution = 6;
+
+  const BONES = [
+    [0,1],[1,2],[2,3],[1,4],[4,5],[5,6],[1,7],[7,8],[8,9],
+    [0,10],[10,11],[0,12],[12,13]
+  ];
+
+  function makeEntity(x) {
+    const scale = R(0.4, 0.8);
+    const nodes = [
+      [x, H*0.2],    // head
+      [x, H*0.38],   // neck/chest
+      [x, H*0.55],   // torso
+      [x, H*0.72],   // hips
+      [x-W*0.06*scale, H*0.38], [x-W*0.1*scale, H*0.52], [x-W*0.08*scale, H*0.65], // L arm
+      [x+W*0.06*scale, H*0.38], [x+W*0.1*scale, H*0.52], [x+W*0.08*scale, H*0.65], // R arm
+      [x-W*0.04*scale, H*0.72], [x-W*0.04*scale, H*0.92], // L leg
+      [x+W*0.04*scale, H*0.72], [x+W*0.04*scale, H*0.92], // R leg
+    ];
+    return { nodes, opacity:0, scale, jitter:R(1,4) };
+  }
+
+  $('sls-res').oninput = e => { resolution = +e.target.value; $('sls-res-val').textContent = resolution; };
+  $('sls-freeze').onclick = function() { frozen = !frozen; this.classList.toggle('armed', frozen); };
+  $('sls-scan').onclick = () => {
+    if (entities.length < 3) entities.push(makeEntity(R(W*0.2, W*0.8)));
+  };
+
+  function tick() {
+    frameCount++;
+    if (!frozen) {
+      // random spawn
+      if (Math.random() < 0.004 && entities.length < 2) entities.push(makeEntity(R(W*0.2,W*0.8)));
+      entities.forEach(e => {
+        e.opacity = Math.min(1, e.opacity + 0.02);
+        // sway
+        e.nodes.forEach((n,i) => {
+          n[0] += Math.sin(frameCount*0.05 + i) * 0.3;
+          n[1] += Math.cos(frameCount*0.04 + i*0.7) * 0.2;
+        });
+        e.nodes[0][0] += (R(-1,1))*e.jitter*0.1;
+      });
+      if (Math.random()<0.003 && entities.length>0) entities.shift();
+    }
+
+    // draw
+    ctx.fillStyle = '#01080d';
+    ctx.fillRect(0,0,W,H);
+
+    // scan line sweep
+    const sl = (frameCount*2) % H;
+    ctx.fillStyle = 'rgba(255,204,0,0.06)';
+    ctx.fillRect(0,sl,W,3);
+
+    // grid dots
+    ctx.fillStyle = 'rgba(255,204,0,0.06)';
+    for (let x=0;x<W;x+=resolution*4) for (let y=0;y<H;y+=resolution*4) {
+      ctx.fillRect(x,y,1,1);
+    }
+
+    entities.forEach(e => {
+      const alpha = e.opacity * (frozen ? 1 : 0.85 + Math.sin(frameCount*0.1)*0.15);
+      // bones
+      ctx.strokeStyle = `rgba(255,204,0,${alpha*0.7})`;
+      ctx.lineWidth = 1.5;
+      BONES.forEach(([a,b]) => {
+        if (!e.nodes[a]||!e.nodes[b]) return;
+        ctx.beginPath();
+        ctx.moveTo(e.nodes[a][0], e.nodes[a][1]);
+        ctx.lineTo(e.nodes[b][0], e.nodes[b][1]);
+        ctx.stroke();
+      });
+      // nodes
+      e.nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n[0],n[1],3,0,Math.PI*2);
+        ctx.fillStyle = `rgba(255,204,0,${alpha})`;
+        ctx.fill();
+      });
+      // head circle
+      ctx.beginPath();
+      ctx.arc(e.nodes[0][0], e.nodes[0][1], 8*e.scale,0,Math.PI*2);
+      ctx.strokeStyle = `rgba(255,204,0,${alpha*0.6})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    const n = entities.length;
+    const conf = n>0 ? Math.round(70+Math.random()*25) : 0;
+    $('sls-forms').textContent = n;
+    $('sls-nodes').textContent = n * 14;
+    $('sls-conf').textContent = n>0 ? conf+'%' : '—';
+
+    const detected = n > 0;
+    if (detected && Math.random()<0.05) flash('sls-flash');
+    showWarn('sls-warn', detected);
+    $('sls-status').textContent = n>1 ? 'MULTIPLE' : n===1 ? 'LOCKED' : 'SWEEPING';
+  }
+  setInterval(tick, 80);
+})();
+
+// ─── 4. EVP / SPIRIT BOX ─────────────────────
+(function() {
+  const canvas = $('evp-wave');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const history = new Array(W).fill(0);
+  let current = 0, targetSig = 0, scanRate = 4;
+  let recording = false, itcMode = false, noiseFilter = false;
+  let freqTarget = 0, currentFreq = 0;
+
+  // Build frequency bands
+  const bandsEl = $('evp-bands');
+  const BAND_COUNT = 24;
+  const bandEls = [];
+  for (let i=0;i<BAND_COUNT;i++) {
+    const b = document.createElement('div');
+    b.className = 'freq-band';
+    bandsEl.appendChild(b);
+    bandEls.push(b);
+  }
+
+  $('evp-rate').oninput = e => { scanRate=+e.target.value; $('evp-rate-val').textContent=scanRate; };
+  $('evp-rec').onclick = function() { recording=!recording; this.classList.toggle('armed',recording); this.textContent=recording?'■ STOP':'● REC'; };
+  $('evp-itc').onclick = function() { itcMode=!itcMode; this.classList.toggle('armed',itcMode); };
+  $('evp-filter').onclick = function() { noiseFilter=!noiseFilter; this.classList.toggle('armed',noiseFilter); };
+
+  function tick() {
+    const rate = scanRate/10;
+    if (Math.random()<0.008*scanRate) { targetSig = R(40,95); freqTarget = R(100,3400); }
+    else if (Math.random()<0.04) { targetSig = R(5,25); }
+
+    current = lerp(current, targetSig, 0.1*rate + (itcMode?0.05:0));
+    if (noiseFilter) current = clamp(current, 0, 80) * 0.85;
+    currentFreq = lerp(currentFreq, freqTarget, 0.08);
+
+    // add noise
+    const noise = noiseFilter ? R(-3,3) : R(-8,8);
+    const displayed = clamp(current + noise, 0, 100);
+
+    history.shift(); history.push(displayed + (Math.random()-0.5)*5);
+
+    // wave canvas
+    ctx.fillStyle = '#0e0014';
+    ctx.fillRect(0,0,W,H);
+
+    // grid
+    ctx.strokeStyle='rgba(204,68,255,0.08)'; ctx.lineWidth=0.5;
+    for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(0,H/4*i);ctx.lineTo(W,H/4*i);ctx.stroke();}
+
+    // waveform — fragmented if signal strong
+    const isVoice = current > 55;
+    ctx.lineWidth = 1.5;
+    if (isVoice) {
+      // fragmented ghost style
+      for (let seg=0;seg<5;seg++) {
+        const start = Math.floor(W*seg/5);
+        const end = Math.floor(W*(seg+1)/5) - Ri(0,6);
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(204,68,255,${0.4+Math.random()*0.5})`;
+        for (let i=start;i<end;i++) {
+          const v = history[i];
+          const y = H - (v/100)*H*0.85 + (Math.random()-0.5)*4;
+          i===start ? ctx.moveTo(i,y) : ctx.lineTo(i,y);
+        }
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath();
+      history.forEach((v,i)=>{
+        const y = H-(v/100)*H*0.85;
+        i===0?ctx.moveTo(i,y):ctx.lineTo(i,y);
+      });
+      ctx.strokeStyle='rgba(204,68,255,0.7)';
+      ctx.stroke();
+    }
+
+    // frequency bands
+    bandEls.forEach((b,i) => {
+      const base = current/100;
+      const bHeight = clamp(base*40 + R(0,base*20) + (Math.random()<0.05?R(0,20):0), 2, 40);
+      const isActive = bHeight > 20;
+      b.style.height = bHeight+'px';
+      b.style.background = isActive ? 'var(--purple)' : 'var(--purple-d)';
+    });
+
+    // readouts
+    $('evp-val').textContent = displayed.toFixed(0);
+    $('evp-freq').textContent = currentFreq.toFixed(0);
+    $('evp-coh').textContent = isVoice ? Math.round(60+Math.random()*35)+'%' : Math.round(Math.random()*30)+'%';
+    $('evp-bar').style.width = displayed+'%';
+
+    if (isVoice && Math.random()<0.06) flash('evp-flash');
+    showWarn('evp-warn', current > 60);
+    $('evp-status').textContent = current>60?'VOICE LOCK':current>30?'SIGNAL':'SILENCE';
+  }
+  setInterval(tick, 70);
+})();
+
+// ─── 5. SPATIAL RIFT SCANNER ─────────────────
+(function() {
+  const canvas = $('spatial-grid-canvas');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let riftIdx = 0, targetIdx = 0, riftX = W/2, riftY = H/2, riftR = 0;
+  let scanDepth = 5;
+
+  $('spatial-depth').oninput = e => { scanDepth=+e.target.value; $('spatial-depth-val').textContent=scanDepth; };
+  $('spatial-probe').onclick = () => { targetIdx = R(3,9); };
+  $('spatial-anchor').onclick = function() { targetIdx = 0; this.classList.toggle('armed'); };
+
+  function tick() {
+    if (Math.random()<0.01) { targetIdx = R(0,10); riftX=R(W*0.2,W*0.8); riftY=R(H*0.2,H*0.8); }
+    riftIdx = lerp(riftIdx, targetIdx, 0.06);
+    riftR = lerp(riftR, riftIdx*8, 0.08);
+
+    ctx.fillStyle = '#000813';
+    ctx.fillRect(0,0,W,H);
+
+    // grid with distortion near rift
+    const STEP = 18;
+    ctx.lineWidth = 0.5;
+    for (let x=0;x<=W;x+=STEP) {
+      ctx.beginPath();
+      for (let y=0;y<=H;y+=4) {
+        const dx = x-riftX, dy = y-riftY;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        const pull = riftIdx * (30/(dist+10));
+        const nx = x + (dx/dist||0)*(-pull) + Math.sin(y*0.1+riftIdx)*riftIdx*0.5;
+        const ny = y;
+        y===0?ctx.moveTo(nx,ny):ctx.lineTo(nx,ny);
+      }
+      const intensity = clamp(riftIdx/10, 0, 1);
+      ctx.strokeStyle = `rgba(0,${Math.round(207-intensity*100)},255,${0.2+intensity*0.3})`;
+      ctx.stroke();
+    }
+    for (let y=0;y<=H;y+=STEP) {
+      ctx.beginPath();
+      for (let x=0;x<=W;x+=4) {
+        const dx = x-riftX, dy = y-riftY;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        const pull = riftIdx * (30/(dist+10));
+        const nx = x;
+        const ny = y + (dy/dist||0)*(-pull) + Math.cos(x*0.1+riftIdx)*riftIdx*0.5;
+        x===0?ctx.moveTo(nx,ny):ctx.lineTo(nx,ny);
+      }
+      ctx.strokeStyle = `rgba(0,200,255,0.15)`;
+      ctx.stroke();
+    }
+
+    // rift eye
+    if (riftIdx > 1) {
+      const grad = ctx.createRadialGradient(riftX,riftY,0,riftX,riftY,riftR*3);
+      grad.addColorStop(0, `rgba(0,207,255,${riftIdx*0.04})`);
+      grad.addColorStop(0.4, `rgba(0,100,180,${riftIdx*0.025})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(riftX,riftY,riftR*3,0,Math.PI*2); ctx.fill();
+
+      // event horizon ring
+      ctx.beginPath(); ctx.arc(riftX,riftY,riftR,0,Math.PI*2);
+      ctx.strokeStyle = `rgba(0,207,255,${0.4+Math.sin(Date.now()*0.005)*0.3})`;
+      ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    $('spatial-val').textContent = riftIdx.toFixed(2);
+    $('spatial-fold').textContent = (riftIdx*0.37).toFixed(3);
+    $('spatial-path').textContent = riftIdx>6?'UNSTABLE':riftIdx>3?'WARPED':'STABLE';
+    $('spatial-bar').style.width = (riftIdx/10*100)+'%';
+
+    const critical = riftIdx > 6;
+    if (critical && Math.random()<0.06) flash('spatial-flash');
+    showWarn('spatial-warn', critical);
+    $('spatial-status').textContent = critical?'RIFT OPEN':riftIdx>3?'WARPED':'SCANNING';
+    $('spatial-status').style.color = critical?'var(--red)':riftIdx>3?'var(--amber)':'var(--blue-d)';
+  }
+  setInterval(tick, 60);
+})();
+
+// ─── 6. GHOUL RESONANCE INDEX ────────────────
+(function() {
+  const canvas = $('resonance-canvas');
+  canvas.width = 140; canvas.height = 110;
+  const ctx = canvas.getContext('2d');
+  const CX = 70, CY = 62, RINGS = 4;
+  let gri = 0, targetGri = 0, angle = 0;
+
+  $('res-sens').oninput = e => $('res-sens-val').textContent = e.target.value;
+  $('res-calibrate').onclick = () => { targetGri = 0; };
+  $('res-lock').onclick = function() { this.classList.toggle('armed'); };
+
+  function tick() {
+    if (Math.random()<0.012) targetGri = R(0,9.9);
+    gri = lerp(gri, targetGri, 0.05);
+    angle += 0.025 + gri*0.008;
+
+    ctx.fillStyle = '#0f0018';
+    ctx.fillRect(0,0,140,110);
+
+    const intensity = gri/10;
+
+    // rings
+    for (let r=RINGS;r>=1;r--) {
+      const radius = (r/RINGS)*CX*0.95;
+      ctx.beginPath(); ctx.arc(CX,CY,radius,0,Math.PI*2);
+      ctx.strokeStyle = `rgba(204,68,255,${0.05+intensity*0.1})`;
+      ctx.lineWidth = 0.5; ctx.stroke();
+    }
+
+    // rotating spokes
+    for (let s=0;s<8;s++) {
+      const a = angle + s*Math.PI/4;
+      const r1 = CX*0.15, r2 = CX*0.9*(0.7+intensity*0.3);
+      ctx.beginPath();
+      ctx.moveTo(CX+Math.cos(a)*r1, CY+Math.sin(a)*r1);
+      ctx.lineTo(CX+Math.cos(a)*r2, CY+Math.sin(a)*r2);
+      ctx.strokeStyle = `rgba(204,68,255,${0.1+intensity*0.25})`;
+      ctx.lineWidth=0.8; ctx.stroke();
+    }
+
+    // pulse rings emanating outward
+    const pRing = (Date.now()/1000*gri*0.5) % 1;
+    if (gri > 2) {
+      ctx.beginPath(); ctx.arc(CX,CY,pRing*CX*0.9,0,Math.PI*2);
+      ctx.strokeStyle = `rgba(204,68,255,${(1-pRing)*intensity*0.8})`;
+      ctx.lineWidth=1; ctx.stroke();
+    }
+
+    // baseline marker
+    const baseAngle = -Math.PI/2 + (3.5/10)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.lineTo(CX+Math.cos(baseAngle)*CX*0.7, CY+Math.sin(baseAngle)*CX*0.7);
+    ctx.strokeStyle='rgba(0,255,65,0.35)'; ctx.lineWidth=1; ctx.stroke();
+
+    // current indicator
+    const griAngle = -Math.PI/2 + (gri/10)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.lineTo(CX+Math.cos(griAngle)*CX*0.8, CY+Math.sin(griAngle)*CX*0.8);
+    ctx.strokeStyle=`rgba(204,68,255,${0.7+intensity*0.3})`; ctx.lineWidth=2; ctx.stroke();
+
+    // center dot
+    ctx.beginPath(); ctx.arc(CX,CY,4,0,Math.PI*2);
+    ctx.fillStyle=`rgba(204,68,255,${0.5+intensity*0.5})`; ctx.fill();
+
+    // label
+    ctx.fillStyle='rgba(204,68,255,0.4)'; ctx.font='7px Share Tech Mono';
+    ctx.fillText('GRI',CX-8,14);
+
+    const base = 3.5;
+    $('res-val').textContent = gri.toFixed(1);
+    $('res-delta').textContent = (gri>base?'+':'')+(gri-base).toFixed(1);
+    $('res-bar').style.width = (gri/10*100)+'%';
+
+    const lock = gri > 7;
+    if (lock && Math.random()<0.05) flash('res-flash');
+    showWarn('res-warn', lock);
+    $('res-status').textContent = lock?'ENTITY LOCK':gri>3.5?'RESONANT':'MONITORING';
+    $('res-status').style.color = lock?'var(--red)':gri>3.5?'var(--purple)':'var(--purple-d)';
+  }
+  setInterval(tick, 60);
+})();
+
+// ─── 7. HAUNT PRESSURE METER ─────────────────
+(function() {
+  const gauge = $('haunt-gauge');
+  gauge.width = 120; gauge.height = 110;
+  const gCtx = gauge.getContext('2d');
+
+  const waveCanvas = $('haunt-wave');
+  resizeCanvas(waveCanvas);
+  const wCtx = waveCanvas.getContext('2d');
+  const WW = waveCanvas.width, WH = waveCanvas.height;
+  const wHistory = new Array(WW).fill(0);
+
+  let pressure = 0, targetP = 20, pk = 0;
+
+  $('haunt-purge').onclick = () => { targetP = 0; pressure = pressure*0.3; };
+  $('haunt-anchor').onclick = function() { this.classList.toggle('armed'); };
+
+  function drawGauge(p) {
+    const CX=60, CY=72, R=52;
+    gCtx.fillStyle='#1a0005'; gCtx.fillRect(0,0,120,110);
+
+    // arc track
+    const startA = Math.PI*0.75, endA = Math.PI*2.25;
+    gCtx.beginPath(); gCtx.arc(CX,CY,R,startA,endA);
+    gCtx.strokeStyle='rgba(255,34,51,0.15)'; gCtx.lineWidth=8; gCtx.stroke();
+
+    // filled arc
+    const fillA = startA + (p/100)*(endA-startA);
+    gCtx.beginPath(); gCtx.arc(CX,CY,R,startA,fillA);
+    const col = p>70?'var(--red)':p>40?'var(--amber)':'rgba(255,34,51,0.6)';
+    gCtx.strokeStyle=p>70?'#ff2233':p>40?'#ffcc00':'rgba(255,34,51,0.5)';
+    gCtx.lineWidth=8; gCtx.stroke();
+
+    // tick marks
+    for (let t=0;t<=10;t++) {
+      const a = startA + (t/10)*(endA-startA);
+      const r1=R-14, r2=R-8;
+      gCtx.beginPath();
+      gCtx.moveTo(CX+Math.cos(a)*r1, CY+Math.sin(a)*r1);
+      gCtx.lineTo(CX+Math.cos(a)*r2, CY+Math.sin(a)*r2);
+      gCtx.strokeStyle='rgba(255,34,51,0.4)'; gCtx.lineWidth=1; gCtx.stroke();
+    }
+
+    // needle
+    const needleA = startA + (p/100)*(endA-startA);
+    gCtx.beginPath();
+    gCtx.moveTo(CX,CY);
+    gCtx.lineTo(CX+Math.cos(needleA)*(R-12), CY+Math.sin(needleA)*(R-12));
+    gCtx.strokeStyle='#ff2233'; gCtx.lineWidth=2; gCtx.stroke();
+
+    // center
+    gCtx.beginPath(); gCtx.arc(CX,CY,5,0,Math.PI*2);
+    gCtx.fillStyle='#ff2233'; gCtx.fill();
+
+    // label
+    gCtx.fillStyle='rgba(255,34,51,0.5)'; gCtx.font='7px Share Tech Mono';
+    gCtx.fillText('hPa',CX-8,CY+22);
+  }
+
+  function tick() {
+    if (Math.random()<0.01) targetP = R(10,95);
+    pressure = lerp(pressure, targetP, 0.04) + R(-1,1);
+    pressure = clamp(pressure, 0, 100);
+    if (pressure > pk) pk = pressure;
+
+    wHistory.shift(); wHistory.push(pressure + R(-2,2));
+
+    // wave
+    wCtx.fillStyle='#1a0005'; wCtx.fillRect(0,0,WW,WH);
+    wCtx.beginPath();
+    wHistory.forEach((v,i)=>{
+      const y=WH-(v/100)*WH*0.85;
+      i===0?wCtx.moveTo(i,y):wCtx.lineTo(i,y);
+    });
+    wCtx.strokeStyle=pressure>70?'var(--red)':'rgba(255,34,51,0.6)';
+    wCtx.lineWidth=1.5; wCtx.stroke();
+
+    drawGauge(pressure);
+
+    const sat = clamp(pressure, 0, 100);
+    $('haunt-val').textContent = Math.round(pressure);
+    $('haunt-pk').textContent = pk.toFixed(0);
+    $('haunt-sat').textContent = sat.toFixed(0)+'%';
+
+    const extreme = pressure > 70;
+    if (extreme && Math.random()<0.08) flash('haunt-flash');
+    showWarn('haunt-warn', extreme);
+    $('haunt-status').textContent = extreme?'EXTREME':pressure>40?'MODERATE':'NOMINAL';
+    $('haunt-status').style.color = extreme?'var(--red)':pressure>40?'var(--amber)':'var(--red-d)';
+    $('haunt-sdot').style.background = extreme?'var(--red)':pressure>40?'var(--amber)':'var(--red)';
+  }
+  setInterval(tick, 70);
+})();
+
+// ─── 8. ECHO TRACE ENGINE ────────────────────
+(function() {
+  const canvas = $('echo-canvas');
+  resizeCanvas(canvas);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let traces = [], frameCount = 0, capturing = false, replaying = false;
+  let traceDepth = 4;
+
+  $('echo-depth').oninput = e => { traceDepth=+e.target.value; $('echo-depth-val').textContent=traceDepth; };
+  $('echo-capture').onclick = function() {
+    capturing=!capturing; this.classList.toggle('armed',capturing);
+    if (capturing && traces.length < traceDepth*2) spawnTrace();
+  };
+  $('echo-replay').onclick = function() { replaying=!replaying; this.classList.toggle('armed',replaying); };
+  $('echo-clear').onclick = () => { traces=[]; };
+
+  function spawnTrace() {
+    const pts = [];
+    const startX = R(0,W), startY = H/2;
+    let cx=startX, cy=startY;
+    for (let i=0;i<60;i++) { cx+=R(-8,8); cy+=R(-4,4); pts.push([cx,cy]); }
+    traces.push({ pts, age:0, maxAge:Ri(80,200), color:'rgba(255,204,0,', phase:R(0,Math.PI*2) });
+  }
+
+  const AGES = ['<1yr','3-5yr','10yr','30yr+','DEEP'];
+  const FIDS = [82,67,48,31,19];
+
+  function tick() {
+    frameCount++;
+    if (Math.random()<0.006 && traces.length<traceDepth*2) spawnTrace();
+    traces.forEach(t => { t.age += replaying ? 2 : 1; });
+    traces = traces.filter(t => t.age < t.maxAge);
+
+    ctx.fillStyle='#0a0800';
+    ctx.fillRect(0,0,W,H);
+
+    // horizontal guide lines
+    ctx.strokeStyle='rgba(255,204,0,0.05)'; ctx.lineWidth=0.5;
+    for (let i=1;i<4;i++) { ctx.beginPath(); ctx.moveTo(0,H/4*i); ctx.lineTo(W,H/4*i); ctx.stroke(); }
+
+    // time axis
+    ctx.strokeStyle='rgba(255,204,0,0.1)'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+    traces.forEach(t => {
+      const progress = t.age/t.maxAge;
+      const alpha = Math.sin(progress*Math.PI) * (0.4+Math.sin(frameCount*0.05+t.phase)*0.2);
+      const drawUpto = Math.floor(t.pts.length * (replaying ? progress : 1));
+      if (drawUpto < 2) return;
+      ctx.beginPath();
+      t.pts.slice(0,drawUpto).forEach((p,i) => {
+        const x = clamp(p[0],0,W);
+        const y = clamp(H/2 + (p[1]-H/2)*(0.8+progress*0.4), 0, H);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.strokeStyle=t.color+alpha+')';
+      ctx.lineWidth=1.5; ctx.stroke();
+
+      // echo ghost pulse at head
+      if (drawUpto > 0) {
+        const lp = t.pts[drawUpto-1];
+        ctx.beginPath();
+        ctx.arc(clamp(lp[0],0,W), clamp(H/2+(lp[1]-H/2)*0.8,0,H), 4,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,204,0,'+alpha*2+')'; ctx.fill();
+      }
+    });
+
+    // scan cursor
+    const sc = (frameCount*3)%W;
+    ctx.strokeStyle='rgba(255,204,0,0.2)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(sc,0); ctx.lineTo(sc,H); ctx.stroke();
+
+    const n = traces.length;
+    const ageIdx = clamp(Math.floor(n/2), 0, AGES.length-1);
+    const fid = n>0 ? FIDS[ageIdx] + Ri(-5,5) : 0;
+    $('echo-val').textContent = n;
+    $('echo-age').textContent = n>0 ? AGES[ageIdx] : '—';
+    $('echo-fid').textContent = n>0 ? clamp(fid,5,99)+'%' : '—%';
+    $('echo-bar').style.width = (n/(traceDepth*2)*100)+'%';
+
+    const active = n > 3;
+    if (active && Math.random()<0.04) flash('echo-flash');
+    showWarn('echo-warn', active);
+    $('echo-status').textContent = active?'REPLAY':n>0?'TRACES':'LISTENING';
+    $('echo-status').style.color = active?'var(--amber)':n>0?'var(--amber-d)':'rgba(255,204,0,0.3)';
+  }
+  setInterval(tick, 60);
+})();
+
+// ─── SLIDER INIT ─────────────────────────────
+document.querySelectorAll('input[type=range]').forEach(sl => {
+  sl.oninput = sl.oninput || function(){};
+});
+</script>
+</body>
+</html>

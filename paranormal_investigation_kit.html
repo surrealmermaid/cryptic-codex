@@ -1,0 +1,413 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  #pik-root {
+    background: #000;
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ff41;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  #pik-root * { box-sizing: border-box; }
+
+  .pik-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #00ff4133;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+  .pik-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #00ff41;
+  }
+  .pik-subtitle {
+    font-size: 9px;
+    color: #005c15;
+    letter-spacing: 2px;
+  }
+
+  .pik-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .inst-card {
+    background: #020d02;
+    border: 1px solid #00ff4122;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .inst-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom, transparent 0px, transparent 3px,
+      rgba(0,255,65,0.015) 3px, rgba(0,255,65,0.015) 4px
+    );
+    pointer-events: none;
+  }
+  .inst-card:hover {
+    border-color: #00ff4166;
+    background: #041204;
+  }
+  .inst-card.active {
+    border-color: var(--card-accent, #00ff41);
+    background: #041204;
+    box-shadow: 0 0 18px var(--card-glow, #00ff4122) inset;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .card-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--card-accent, #00ff41);
+    line-height: 1.4;
+  }
+  .card-shortcut {
+    font-size: 9px;
+    color: #004010;
+    border: 1px solid #00ff4120;
+    padding: 1px 5px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .inst-card.active .card-shortcut {
+    color: var(--card-accent, #00ff41);
+    border-color: var(--card-accent, #00ff41);
+  }
+
+  .card-function {
+    font-size: 9px;
+    color: #005c15;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .card-reading-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .card-reading {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--card-accent, #00ff41);
+    line-height: 1;
+  }
+  .card-unit {
+    font-size: 10px;
+    color: #005c15;
+    margin-left: 3px;
+  }
+  .card-status {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--card-accent, #00ff41);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--card-accent, #00ff41);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .ind-pulse { animation: indPulse 1.4s ease-in-out infinite; }
+  .ind-fast  { animation: indPulse 0.5s ease-in-out infinite; }
+  .ind-slow  { animation: indPulse 2.8s ease-in-out infinite; }
+  .ind-flicker { animation: indFlicker 0.3s step-end infinite; }
+  .ind-static { opacity: 0.4; }
+  @keyframes indPulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.2; transform: scale(0.7); }
+  }
+  @keyframes indFlicker {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.1; }
+    50%  { opacity: 0.8; }
+    75%  { opacity: 0.2; }
+    100% { opacity: 1; }
+  }
+
+  .card-bar {
+    height: 2px;
+    background: #001a05;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .card-bar-fill {
+    height: 100%;
+    background: var(--card-accent, #00ff41);
+    box-shadow: 0 0 4px var(--card-accent, #00ff41);
+    transition: width 1.2s ease;
+  }
+
+  .pik-footer {
+    margin-top: 12px;
+    border-top: 1px solid #00ff4133;
+    padding-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #004010;
+    letter-spacing: 2px;
+  }
+  .pik-footer .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+
+<div id="pik-root">
+  <h2 class="sr-only">Paranormal Investigation Kit — 8 instrument cards with live readings</h2>
+
+  <div class="pik-header">
+    <div>
+      <div class="pik-title">Paranormal Investigation Kit</div>
+      <div class="pik-subtitle" style="margin-top:3px;">CRYPTIC CODEX — INSTRUMENT ARRAY v2.3</div>
+    </div>
+    <div class="pik-subtitle"><span class="blink" id="pik-blink">▮</span> 8 INSTRUMENTS ONLINE</div>
+  </div>
+
+  <div class="pik-grid" id="pikGrid"></div>
+
+  <div class="pik-footer">
+    <span>CLICK CARD TO ACTIVATE · TYPE SHORTCUT IN TERMINAL TO QUERY</span>
+    <span id="pik-active-count">0 ACTIVE</span>
+  </div>
+</div>
+
+<script>
+const INSTRUMENTS = [
+  {
+    id: 'emf',
+    name: 'EMF PRESSURE\nMETER',
+    shortcut: ':emf',
+    fn: 'Measures electromagnetic field anomalies and pressure spikes in local space',
+    reading: () => (0.2 + Math.random() * 9.6).toFixed(1),
+    unit: 'mG',
+    statusLabels: ['NOMINAL','ELEVATED','CRITICAL'],
+    thresholds: [3, 7],
+    accent: '#00ff41',
+    glow: '#00ff4118',
+    indClass: 'ind-pulse',
+  },
+  {
+    id: 'thermal',
+    name: 'THERMAL\nINTEGRITY SCAN',
+    shortcut: ':tis',
+    fn: 'Detects cold spot formation and thermal variance across spectral layers',
+    reading: () => (Math.random() > 0.3 ? (14 + Math.random()*18).toFixed(1) : (-(Math.random()*8)).toFixed(1)),
+    unit: '°C Δ',
+    statusLabels: ['STABLE','COLD SPOT','BREACH'],
+    thresholds: [0, -3],
+    accent: '#00cfff',
+    glow: '#00cfff18',
+    indClass: 'ind-slow',
+    invertThresh: true,
+  },
+  {
+    id: 'sls',
+    name: 'SLS LATTICE\nSCANNER',
+    shortcut: ':sls',
+    fn: 'Structured light skeletal mapping — detects non-visible humanoid forms',
+    reading: () => Math.floor(Math.random() * 4),
+    unit: 'forms',
+    statusLabels: ['CLEAR','DETECTED','MULTIPLE'],
+    thresholds: [1, 2],
+    accent: '#ff9900',
+    glow: '#ff990018',
+    indClass: 'ind-fast',
+  },
+  {
+    id: 'evp',
+    name: 'EVP / SPIRIT\nBOX',
+    shortcut: ':evp',
+    fn: 'Records electronic voice phenomena and scans ITC frequency bands',
+    reading: () => (Math.random() * 100).toFixed(0),
+    unit: 'dB',
+    statusLabels: ['SILENCE','SIGNAL','VOICE LOCK'],
+    thresholds: [20, 60],
+    accent: '#cc44ff',
+    glow: '#cc44ff18',
+    indClass: 'ind-flicker',
+  },
+  {
+    id: 'spatial',
+    name: 'SPATIAL\nDISTORTION SCAN',
+    shortcut: ':sds',
+    fn: 'Monitors local spacetime geometry for fold anomalies and rift indices',
+    reading: () => (Math.random() * 10).toFixed(2),
+    unit: 'RI',
+    statusLabels: ['FLAT','WARPED','RIFT OPEN'],
+    thresholds: [2, 6],
+    accent: '#00ffcc',
+    glow: '#00ffcc18',
+    indClass: 'ind-pulse',
+  },
+  {
+    id: 'ghoul',
+    name: 'GHOUL\nRESONANCE INDEX',
+    shortcut: ':gri',
+    fn: 'Quantifies entity resonance signature against the spectral codex baseline',
+    reading: () => (Math.random() * 9.9).toFixed(1),
+    unit: 'GRI',
+    statusLabels: ['INERT','RESONANT','ENTITY LOCK'],
+    thresholds: [3.5, 7.0],
+    accent: '#ff3366',
+    glow: '#ff336618',
+    indClass: 'ind-slow',
+  },
+  {
+    id: 'haunt',
+    name: 'HAUNT\nPRESSURE METER',
+    shortcut: ':hpm',
+    fn: 'Aggregates psychokinetic pressure build-up across the local haunt field',
+    reading: () => (Math.random() * 100).toFixed(0),
+    unit: 'hPa',
+    statusLabels: ['LOW','MODERATE','EXTREME'],
+    thresholds: [30, 70],
+    accent: '#ffcc00',
+    glow: '#ffcc0018',
+    indClass: 'ind-pulse',
+  },
+  {
+    id: 'echo',
+    name: 'ECHO TRACE\nENGINE',
+    shortcut: ':ete',
+    fn: 'Captures residual temporal echoes and replays imprinted spectral events',
+    reading: () => Math.floor(Math.random() * 12),
+    unit: 'traces',
+    statusLabels: ['SILENT','TRACES','REPLAY'],
+    thresholds: [1, 5],
+    accent: '#88ffaa',
+    glow: '#88ffaa18',
+    indClass: 'ind-slow',
+  },
+];
+
+function getStatus(inst, val) {
+  const n = parseFloat(val);
+  if (inst.invertThresh) {
+    if (n <= inst.thresholds[1]) return 2;
+    if (n <= inst.thresholds[0]) return 1;
+    return 0;
+  }
+  if (n >= inst.thresholds[1]) return 2;
+  if (n >= inst.thresholds[0]) return 1;
+  return 0;
+}
+
+function getBarPct(inst, val) {
+  const n = parseFloat(val);
+  if (inst.id === 'emf')     return Math.min(100, (n / 10) * 100);
+  if (inst.id === 'thermal') return Math.min(100, Math.max(0, ((n + 8) / 40) * 100));
+  if (inst.id === 'sls')     return Math.min(100, (n / 3) * 100);
+  if (inst.id === 'evp')     return Math.min(100, n);
+  if (inst.id === 'spatial') return Math.min(100, (n / 10) * 100);
+  if (inst.id === 'ghoul')   return Math.min(100, (n / 10) * 100);
+  if (inst.id === 'haunt')   return Math.min(100, n);
+  if (inst.id === 'echo')    return Math.min(100, (n / 12) * 100);
+  return 50;
+}
+
+const activeSet = new Set();
+let readings = {};
+
+function buildCard(inst) {
+  const val = inst.reading();
+  readings[inst.id] = val;
+  const si = getStatus(inst, val);
+  const label = inst.statusLabels[si];
+  const pct = getBarPct(inst, val);
+  const nameParts = inst.name.split('\n');
+
+  const card = document.createElement('div');
+  card.className = 'inst-card';
+  card.id = 'card-' + inst.id;
+  card.style.setProperty('--card-accent', inst.accent);
+  card.style.setProperty('--card-glow', inst.glow);
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div class="card-name">${nameParts[0]}<br>${nameParts[1]}</div>
+      <div class="card-shortcut">${inst.shortcut}</div>
+    </div>
+    <div class="card-function">${inst.fn}</div>
+    <div class="card-reading-row">
+      <div>
+        <span class="card-reading" id="rdg-${inst.id}">${val}</span>
+        <span class="card-unit">${inst.unit}</span>
+      </div>
+      <div class="card-status">
+        <span class="indicator ${inst.indClass}" style="background:${inst.accent}"></span>
+        <span id="stat-${inst.id}">${label}</span>
+      </div>
+    </div>
+    <div class="card-bar">
+      <div class="card-bar-fill" id="bar-${inst.id}" style="width:${pct}%; background:${inst.accent}; box-shadow:0 0 4px ${inst.accent};"></div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => {
+    if (activeSet.has(inst.id)) {
+      activeSet.delete(inst.id);
+      card.classList.remove('active');
+    } else {
+      activeSet.add(inst.id);
+      card.classList.add('active');
+    }
+    document.getElementById('pik-active-count').textContent = activeSet.size + ' ACTIVE';
+  });
+
+  return card;
+}
+
+const grid = document.getElementById('pikGrid');
+INSTRUMENTS.forEach(inst => grid.appendChild(buildCard(inst)));
+
+function refreshReadings() {
+  INSTRUMENTS.forEach(inst => {
+    const val = inst.reading();
+    readings[inst.id] = val;
+    const si = getStatus(inst, val);
+    const label = inst.statusLabels[si];
+    const pct = getBarPct(inst, val);
+
+    const rdgEl  = document.getElementById('rdg-' + inst.id);
+    const statEl = document.getElementById('stat-' + inst.id);
+    const barEl  = document.getElementById('bar-' + inst.id);
+
+    if (rdgEl)  rdgEl.textContent = val;
+    if (statEl) statEl.textContent = label;
+    if (barEl)  barEl.style.width = pct + '%';
+  });
+}
+
+setInterval(refreshReadings, 2200);
+</script>
