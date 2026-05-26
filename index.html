@@ -1,0 +1,2401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRYPTIC CODEX TERMINAL</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --bg: #040607;
+      --panel: #071113;
+      --panel-soft: #0b181a;
+      --line: #1d3b40;
+      --cyan: #45f0dd;
+      --blue: #5f8cff;
+      --gold: #ffcc66;
+      --green: #73ff9a;
+      --red: #ff5b6e;
+      --violet: #c079ff;
+      --text: #d8fff8;
+      --muted: #83aaa9;
+      --dim: #4f7172;
+      --scanline: rgba(216, 255, 248, 0.025);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Share Tech Mono", monospace;
+      user-select: none;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(to bottom, transparent 0 3px, var(--scanline) 3px 4px),
+        radial-gradient(circle at 48% 38%, rgba(69, 240, 221, 0.13), transparent 32%),
+        radial-gradient(circle at 86% 78%, rgba(192, 121, 255, 0.09), transparent 28%);
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 79;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.76) 100%);
+    }
+
+    #titlebar {
+      -webkit-app-region: drag;
+      position: relative;
+      z-index: 90;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 14px;
+      background: #030606;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .title-sigil {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(69, 240, 221, 0.24), inset 0 0 10px rgba(69, 240, 221, 0.16);
+      font-size: 14px;
+    }
+
+    .title-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .title-name {
+      font-family: "Orbitron", monospace;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .title-status {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    .blink { animation: blink 1.1s steps(2, jump-none) infinite; }
+    @keyframes blink { 50% { opacity: 0.25; } }
+
+    #titlebar-controls {
+      -webkit-app-region: no-drag;
+      display: flex;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      width: 13px;
+      height: 13px;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.16s ease, filter 0.16s ease;
+    }
+
+    .ctrl-btn:hover { transform: scale(1.12); filter: brightness(1.25); }
+    .ctrl-min { background: var(--gold); }
+    .ctrl-max { background: var(--cyan); }
+    .ctrl-close { background: var(--red); }
+
+    #app {
+      height: calc(100vh - 38px);
+      display: grid;
+      grid-template-columns: 214px minmax(520px, 1fr) 236px;
+      grid-template-rows: minmax(0, 1fr) 0 350px;
+      gap: 1px;
+      background: var(--line);
+      transition: grid-template-rows 0.22s ease, grid-template-columns 0.2s ease;
+    }
+
+    #app.room-view-active {
+      grid-template-rows: minmax(0, 1fr) 30px 58px;
+    }
+
+    #app.room-view-active.instruments-expanded {
+      grid-template-rows: minmax(0, 1fr) 156px 58px;
+    }
+
+    #app.dossier-collapsed {
+      grid-template-columns: 214px minmax(620px, 1fr) 44px;
+    }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .pad {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-family: "Orbitron", monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .section-title span:last-child {
+      color: var(--dim);
+      font-family: "Share Tech Mono", monospace;
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+
+    #panel-chambers {
+      grid-row: 1 / 4;
+      border-right: 1px solid var(--line);
+    }
+
+    .snapshot {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .metric,
+    .readout,
+    .strip-cell {
+      min-width: 0;
+      background: var(--panel-soft);
+      border: 1px solid rgba(69, 240, 221, 0.14);
+    }
+
+    .metric { padding: 5px 6px; }
+    .metric-label,
+    .readout-label,
+    .strip-label {
+      color: var(--dim);
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 3px;
+      color: var(--text);
+      font-family: "Orbitron", monospace;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .layer-spine,
+    .workday-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .layer-step,
+    .flow-step {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 8px;
+      align-items: center;
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .layer-step span:first-child,
+    .flow-step span:first-child {
+      display: grid;
+      place-items: center;
+      height: 20px;
+      border: 1px solid rgba(69, 240, 221, 0.24);
+      color: var(--cyan);
+    }
+
+    .flow-step.done span:first-child {
+      color: var(--green);
+      border-color: rgba(115, 255, 154, 0.36);
+    }
+
+    .flow-step.locked {
+      color: var(--dim);
+      opacity: 0.72;
+    }
+
+    .flow-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .ritual-panel {
+      --ritual: var(--cyan);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      padding: 10px;
+      background: rgba(7, 17, 19, 0.92);
+      border: 1px solid color-mix(in srgb, var(--ritual) 34%, rgba(69, 240, 221, 0.14));
+      box-shadow: inset 0 0 18px color-mix(in srgb, var(--ritual) 10%, transparent);
+    }
+
+    .ritual-core {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .ritual-glyph {
+      display: grid;
+      place-items: center;
+      min-height: 54px;
+      color: var(--ritual);
+      background: rgba(0, 0, 0, 0.24);
+      border: 1px solid color-mix(in srgb, var(--ritual) 42%, transparent);
+      font-family: "Orbitron", monospace;
+      font-size: 26px;
+      line-height: 1;
+      text-shadow: 0 0 14px var(--ritual);
+    }
+
+    .ritual-readout {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      padding: 8px;
+      background: rgba(4, 9, 9, 0.72);
+      border: 1px solid rgba(69, 240, 221, 0.12);
+    }
+
+    .ritual-name {
+      color: var(--text);
+      font-family: "Orbitron", monospace;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .ritual-route {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .ritual-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .ritual-cell {
+      min-width: 0;
+      padding: 6px;
+      background: rgba(4, 9, 9, 0.66);
+      border: 1px solid rgba(69, 240, 221, 0.1);
+    }
+
+    .ritual-cell-value {
+      margin-top: 4px;
+      color: var(--ritual);
+      font-size: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chamber-list {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-right: 2px;
+    }
+
+    .chamber-row {
+      width: 100%;
+      min-height: 58px;
+      padding: 8px;
+      text-align: left;
+      color: var(--text);
+      background: rgba(11, 24, 26, 0.9);
+      border: 1px solid rgba(69, 240, 221, 0.14);
+      cursor: pointer;
+      font: inherit;
+      transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .chamber-row:hover,
+    .chamber-row.active {
+      border-color: var(--state-color);
+      background: rgba(14, 32, 34, 0.96);
+      box-shadow: inset 3px 0 0 var(--state-color), 0 0 14px rgba(69, 240, 221, 0.08);
+    }
+
+    .row-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .row-name {
+      color: var(--text);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .row-severity {
+      color: var(--state-color);
+      font-family: "Orbitron", monospace;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .row-type {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar {
+      height: 4px;
+      margin-top: 9px;
+      background: #071011;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: calc(var(--value) * 100%);
+      background: var(--state-color);
+      box-shadow: 0 0 10px var(--state-color);
+    }
+
+    #panel-map {
+      grid-column: 2;
+      grid-row: 1;
+      background:
+        linear-gradient(rgba(69, 240, 221, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 240, 221, 0.04) 1px, transparent 1px),
+        #040909;
+      background-size: 32px 32px;
+    }
+
+    #pathwayCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+
+    #instrumentCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      opacity: 0.48;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    #map-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px;
+    }
+
+    .map-title h1 {
+      font-family: "Orbitron", monospace;
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: var(--text);
+      text-shadow: 0 0 18px rgba(69, 240, 221, 0.44);
+      line-height: 1.1;
+    }
+
+    .map-title p {
+      display: none;
+    }
+
+    .selected-strip {
+      display: none;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid rgba(69, 240, 221, 0.18);
+      background: var(--line);
+      pointer-events: auto;
+    }
+
+    #app.room-view-active .selected-strip {
+      display: grid;
+    }
+
+    .strip-cell {
+      padding: 6px 8px;
+      background: rgba(4, 9, 9, 0.86);
+    }
+
+    .strip-value {
+      margin-top: 3px;
+      color: var(--text);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #panel-dossier {
+      grid-column: 3;
+      grid-row: 1 / 4;
+      border-left: 1px solid var(--line);
+      overflow: hidden;
+      gap: 8px;
+    }
+
+    #app.dossier-collapsed #panel-dossier {
+      padding: 8px;
+      align-items: stretch;
+    }
+
+    .dossier-toggle {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      background: rgba(69, 240, 221, 0.06);
+      border: 1px solid rgba(69, 240, 221, 0.2);
+      font: inherit;
+      cursor: pointer;
+      line-height: 1;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .dossier-toggle:hover {
+      border-color: var(--cyan);
+    }
+
+    #app.dossier-collapsed .dossier-toggle {
+      transform: rotate(180deg);
+      margin: 0 auto;
+    }
+
+    .dossier-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    #app.dossier-collapsed .dossier-body,
+    #app.dossier-collapsed #dossier-snapshot-wrap,
+    #app.dossier-collapsed .dossier-heading-text,
+    #app.dossier-collapsed #dossier-index {
+      display: none;
+    }
+
+    .dossier-name {
+      color: var(--text);
+      font-family: "Orbitron", monospace;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .dossier-type {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .state-pill {
+      align-self: flex-start;
+      padding: 5px 8px;
+      border: 1px solid var(--active);
+      color: var(--active);
+      background: rgba(69, 240, 221, 0.07);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .dossier-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .readout { padding: 6px; }
+
+    .readout-value {
+      margin-top: 5px;
+      color: var(--text);
+      font-family: "Orbitron", monospace;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .route-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .route-lines b {
+      color: var(--text);
+      font-weight: 400;
+    }
+
+    .task-panel {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-bottom: 2px;
+    }
+
+    .task-list {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .task-empty {
+      padding: 10px;
+      color: var(--dim);
+      background: rgba(4, 9, 9, 0.66);
+      border: 1px dashed rgba(69, 240, 221, 0.18);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 6px;
+      align-items: start;
+      width: 100%;
+      padding: 5px;
+      color: var(--muted);
+      background: rgba(7, 17, 19, 0.86);
+      border: 1px solid rgba(69, 240, 221, 0.12);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .task-row.done {
+      color: var(--text);
+      border-color: rgba(115, 255, 154, 0.28);
+      background: rgba(7, 24, 18, 0.74);
+    }
+
+    .task-check {
+      display: grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      border: 1px solid rgba(69, 240, 221, 0.28);
+      color: var(--green);
+      font-size: 11px;
+    }
+
+    .task-copy {
+      min-width: 0;
+      font-size: 8px;
+      line-height: 1.28;
+    }
+
+    .task-meta {
+      margin-top: 2px;
+      color: var(--dim);
+      font-size: 7px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .task-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .task-action {
+      min-height: 28px;
+      color: var(--cyan);
+      background: rgba(69, 240, 221, 0.06);
+      border: 1px solid rgba(69, 240, 221, 0.18);
+      font: inherit;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .task-action:disabled {
+      color: var(--dim);
+      border-color: rgba(69, 240, 221, 0.08);
+      cursor: not-allowed;
+      opacity: 0.58;
+    }
+
+    .task-status {
+      color: var(--dim);
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .sigil-bank {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .sigil-btn {
+      aspect-ratio: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: var(--muted);
+      background: #071011;
+      border: 1px solid rgba(69, 240, 221, 0.14);
+      font: inherit;
+      cursor: pointer;
+      transition: border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .sigil-btn:hover,
+    .sigil-btn.active {
+      color: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: inset 0 0 16px rgba(69, 240, 221, 0.12), 0 0 12px rgba(69, 240, 221, 0.12);
+    }
+
+    .sigil-glyph {
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .sigil-name {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #panel-instruments {
+      grid-column: 2;
+      grid-row: 2;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 14px;
+      border-top: 1px solid var(--line);
+      background:
+        repeating-linear-gradient(to bottom, transparent 0 4px, rgba(216, 255, 248, 0.018) 4px 5px),
+        #061011;
+      cursor: pointer;
+      transition: padding 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #app.room-view-active #panel-instruments {
+      display: flex;
+    }
+
+    #app.room-view-active.instruments-expanded #panel-instruments {
+      padding: 12px 14px;
+      box-shadow: 0 -14px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .instrument-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 25px;
+    }
+
+    .instrument-head .section-title {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .instrument-summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--dim);
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .instrument-toggle {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      background: rgba(69, 240, 221, 0.06);
+      border: 1px solid rgba(69, 240, 221, 0.2);
+      font: inherit;
+      cursor: pointer;
+      line-height: 1;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    }
+
+    .instrument-toggle:hover {
+      border-color: var(--cyan);
+      box-shadow: inset 0 0 10px rgba(69, 240, 221, 0.12);
+    }
+
+    #app.room-view-active.instruments-expanded .instrument-toggle {
+      transform: rotate(180deg);
+    }
+
+    .warning-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 9px var(--green);
+      animation: warningPulse 1.7s ease-in-out infinite;
+    }
+
+    .warning-dot.hot {
+      background: var(--red);
+      box-shadow: 0 0 12px var(--red);
+      animation-duration: 0.55s;
+    }
+
+    @keyframes warningPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.68); }
+    }
+
+    .instrument-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(76px, 1fr));
+      gap: 8px;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.18s ease, max-height 0.22s ease, transform 0.18s ease;
+    }
+
+    #app.room-view-active.instruments-expanded .instrument-grid {
+      opacity: 1;
+      max-height: 132px;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .instrument-card {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 7px;
+      padding: 8px;
+      background: rgba(8, 18, 20, 0.94);
+      border: 1px solid rgba(69, 240, 221, 0.14);
+      color: var(--muted);
+      cursor: pointer;
+      overflow: hidden;
+      font: inherit;
+      text-align: left;
+      transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .instrument-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255, 255, 255, 0.018) 3px 4px);
+    }
+
+    .instrument-card:hover,
+    .instrument-card.active,
+    .instrument-card.warn {
+      border-color: var(--inst);
+      background: rgba(10, 23, 25, 0.98);
+      box-shadow: inset 0 0 16px color-mix(in srgb, var(--inst) 18%, transparent);
+    }
+
+    .instrument-card.critical {
+      border-color: var(--red);
+      box-shadow: inset 0 0 18px rgba(255, 91, 110, 0.16), 0 0 12px rgba(255, 91, 110, 0.12);
+    }
+
+    .inst-top,
+    .inst-reading-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .inst-name {
+      min-width: 0;
+      color: var(--inst);
+      font-family: "Orbitron", monospace;
+      font-size: 8px;
+      font-weight: 700;
+      line-height: 1.35;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .inst-shortcut {
+      color: var(--dim);
+      font-size: 8px;
+      white-space: nowrap;
+    }
+
+    .inst-reading {
+      color: var(--text);
+      font-family: "Orbitron", monospace;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .inst-unit {
+      margin-left: 3px;
+      color: var(--dim);
+      font-size: 9px;
+    }
+
+    .inst-status {
+      align-self: flex-end;
+      color: var(--inst);
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-align: right;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .wave-box {
+      position: relative;
+      z-index: 1;
+      height: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background:
+        linear-gradient(rgba(69, 240, 221, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 240, 221, 0.04) 1px, transparent 1px),
+        #050a0b;
+      background-size: 12px 12px;
+      overflow: hidden;
+    }
+
+    .wave-line {
+      position: absolute;
+      inset: 0;
+      width: 200%;
+      height: 100%;
+      background:
+        linear-gradient(90deg, transparent 0 8%, var(--inst) 9% 10%, transparent 11% 18%, var(--inst) 19% 21%, transparent 22% 36%, var(--inst) 37% 38%, transparent 39% 58%, var(--inst) 59% 61%, transparent 62% 100%);
+      clip-path: polygon(0 54%, 5% 46%, 10% 58%, 15% 35%, 20% 64%, 25% 52%, 30% 56%, 35% 28%, 40% 68%, 45% 50%, 50% 55%, 55% 42%, 60% 60%, 65% 34%, 70% 66%, 75% 48%, 80% 54%, 85% 40%, 90% 62%, 95% 50%, 100% 54%);
+      opacity: 0.72;
+      filter: drop-shadow(0 0 5px var(--inst));
+      animation: waveDrift 2.8s linear infinite;
+    }
+
+    .critical .wave-line { animation-duration: 0.95s; opacity: 0.95; }
+    .warn .wave-line { animation-duration: 1.55s; }
+
+    @keyframes waveDrift {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .inst-bar {
+      position: relative;
+      z-index: 1;
+      height: 3px;
+      background: #071011;
+      overflow: hidden;
+    }
+
+    .inst-bar-fill {
+      height: 100%;
+      width: var(--pct);
+      background: var(--inst);
+      box-shadow: 0 0 8px var(--inst);
+      transition: width 0.9s ease;
+    }
+
+    #panel-terminal {
+      grid-column: 2;
+      grid-row: 3;
+      padding: 13px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      background: #050b0c;
+    }
+
+    #app.room-view-active #panel-terminal {
+      padding: 7px 14px;
+      justify-content: center;
+    }
+
+    #terminal-output {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    #app.room-view-active #terminal-output {
+      display: none;
+    }
+
+    .t-line .prompt { color: var(--cyan); }
+    .t-line .response { color: var(--text); }
+    .t-line .system { color: var(--gold); }
+    .t-line .error { color: var(--red); }
+    .t-line .sigil { color: var(--violet); }
+
+    #terminal-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 24px;
+    }
+
+    #app.room-view-active #terminal-input-row {
+      min-height: 34px;
+      padding: 0 8px;
+      border: 1px solid rgba(69, 240, 221, 0.18);
+      background: rgba(3, 8, 9, 0.72);
+    }
+
+    .prompt-char {
+      color: var(--cyan);
+      font-size: 13px;
+      text-shadow: 0 0 8px rgba(69, 240, 221, 0.55);
+      white-space: nowrap;
+    }
+
+    #terminal-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      caret-color: var(--cyan);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    #terminal-input::placeholder { color: var(--dim); }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(69, 240, 221, 0.24); }
+  </style>
+</head>
+<body>
+  <div id="titlebar">
+    <div id="titlebar-left">
+      <span class="title-sigil">◉</span>
+      <div class="title-copy">
+        <span class="title-name">CRYPTIC CODEX TERMINAL</span>
+        <span class="title-status">ANOMALY OBSERVATORY <span class="blink">ONLINE</span></span>
+      </div>
+    </div>
+    <div id="titlebar-controls">
+      <button class="ctrl-btn ctrl-min" onclick="window.electronAPI?.minimizeWindow()" aria-label="Minimize"></button>
+      <button class="ctrl-btn ctrl-max" onclick="window.electronAPI?.maximizeWindow()" aria-label="Maximize"></button>
+      <button class="ctrl-btn ctrl-close" onclick="window.electronAPI?.closeWindow()" aria-label="Close"></button>
+    </div>
+  </div>
+
+  <main id="app">
+    <section class="panel pad" id="panel-chambers">
+      <div class="section-title"><span>Workday Flow</span><span id="flow-progress">0/0</span></div>
+      <div class="workday-flow" id="workday-flow"></div>
+      <div class="flow-actions">
+        <button class="task-action" id="flow-load-workday" type="button">Load Day</button>
+        <button class="task-action" id="flow-send-report" type="button" disabled>HQ Report</button>
+      </div>
+      <div class="section-title"><span>Sigil Ritual</span><span id="active-sigil-label">none</span></div>
+      <div class="ritual-panel" id="ritual-panel">
+        <div class="ritual-core">
+          <div class="ritual-glyph" id="ritual-glyph">◌</div>
+          <div class="ritual-readout">
+            <div class="ritual-name" id="ritual-name">No Sigil Bound</div>
+            <div class="ritual-route" id="ritual-route">Awaiting chamber response.</div>
+          </div>
+        </div>
+        <div class="sigil-bank" id="sigil-bank"></div>
+        <div class="ritual-grid" id="ritual-grid"></div>
+      </div>
+      <div class="section-title"><span>Anomaly Chambers</span><span>severity</span></div>
+      <div class="chamber-list" id="chamber-list"></div>
+    </section>
+
+    <section class="panel" id="panel-map">
+      <canvas id="pathwayCanvas"></canvas>
+      <canvas id="instrumentCanvas" aria-hidden="true"></canvas>
+      <div id="map-overlay">
+        <div class="map-title">
+          <h1>FLOOR MODEL</h1>
+        </div>
+        <div class="selected-strip" id="selected-strip"></div>
+      </div>
+    </section>
+
+    <aside class="panel pad" id="panel-dossier">
+      <div class="section-title">
+        <span class="dossier-heading-text">Observatory Snapshot</span>
+        <button class="dossier-toggle" id="dossier-toggle" type="button" aria-label="Collapse active dossier" aria-expanded="true">›</button>
+      </div>
+      <div id="dossier-snapshot-wrap">
+        <div class="snapshot" id="snapshot"></div>
+        <div class="section-title" style="padding-top:8px;"><span>Active Dossier</span><span id="dossier-index"></span></div>
+      </div>
+      <div class="dossier-body">
+        <div>
+          <div class="dossier-name" id="dossier-name"></div>
+          <div class="dossier-type" id="dossier-type"></div>
+        </div>
+        <div class="state-pill" id="state-pill"></div>
+        <div class="dossier-grid" id="dossier-grid"></div>
+        <div class="section-title"><span>Pathway Telemetry</span><span id="gate-state"></span></div>
+        <div class="route-lines" id="route-lines"></div>
+        <div class="section-title"><span>Work Day Tasks</span><span id="task-progress">0/0</span></div>
+        <div class="task-panel">
+          <div class="task-list" id="task-list"></div>
+          <div class="task-actions">
+            <button class="task-action" id="load-workday" type="button">Load Work Day</button>
+            <button class="task-action" id="send-report" type="button" disabled>Send HQ Report</button>
+          </div>
+          <div class="task-status" id="task-status"></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="panel" id="panel-instruments">
+      <div class="instrument-head">
+        <div class="section-title"><span>Spectral Instrument Array</span><span>kit v2.3</span></div>
+        <div class="instrument-summary">
+          <span class="warning-dot" id="instrument-warning"></span>
+          <span id="instrument-active-count">0 active</span>
+          <span id="instrument-alert-count">0 warnings</span>
+          <button class="instrument-toggle" id="instrument-toggle" type="button" aria-label="Expand spectral instrument array" aria-expanded="false">⌃</button>
+        </div>
+      </div>
+      <div class="instrument-grid" id="instrument-grid"></div>
+    </section>
+
+    <section class="panel" id="panel-terminal">
+      <div id="terminal-output"></div>
+      <div id="terminal-input-row">
+        <span class="prompt-char">CRYPTIC://&gt;</span>
+        <input id="terminal-input" type="text" placeholder="enter command: sigil observe, sigil align, exorcise, report" autocomplete="off" spellcheck="false" />
+      </div>
+    </section>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../node_modules/three/build/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "../node_modules/three/examples/jsm/loaders/GLTFLoader.js"
+      }
+    }
+  </script>
+  <script>
+    const DATA = {
+      dashboard: {
+        timestamp: "2026-05-25T20:09:22",
+        system_integrity_score: 0.776,
+        system_integrity_state: "stable_with_watchpoints",
+        total_chambers: 5,
+        average_GRE: 0.392,
+        average_GR: 0.975,
+        average_echo_density: 0.1,
+        average_stabilized_echo_density: 0.032,
+        active_observer_interactions: 1,
+        last_observatory_recommendation: "suggest_anchor_or_disperse"
+      },
+      spine: ["Input", "Translation", "Transformation", "Integrity", "Decision", "Output"],
+      chambers: [
+        { chamber: "Conversion Junction", type: "Metamorphosis Chamber", coherence: 0.82, congruence: 0.76, instability: 0.31, haunt_density: 0.58, severity: 2.5, instability_score: 0.243, current_state: "monitored_transition", state_color: "Cyan", branch_path: "standard_observation_path", GRE: 0.365, amplified_haunt_density: 0.686, GR: 1.0, gravity_well_state: "strong_gravity_well", echo_state: "echo_unlikely", echo_density: 0.1, stabilized_echo_density: 0.023, stability_return_state: "stability_returned", recovery_color: "Blue", chamber_influence: 0.697 },
+        { chamber: "Core Manifold", type: "Pressure Core", coherence: 0.61, congruence: 0.55, instability: 0.72, haunt_density: 0.48, severity: 4.3, instability_score: 0.52, current_state: "fragmented", state_color: "Red", branch_path: "stabilization_path", GRE: 0.478, amplified_haunt_density: 0.595, GR: 1.0, gravity_well_state: "medium_gravity_well", echo_state: "echo_unlikely", echo_density: 0.1, stabilized_echo_density: 0.044, stability_return_state: "partial_recovery", recovery_color: "Green", chamber_influence: 0.748 },
+        { chamber: "Ingestion Gate", type: "Threshold Intake", coherence: 0.44, congruence: 0.39, instability: 0.67, haunt_density: 0.22, severity: 4.1, instability_score: 0.613, current_state: "fragmented", state_color: "Red", branch_path: "stabilization_path", GRE: 0.445, amplified_haunt_density: 0.269, GR: 1.0, gravity_well_state: "medium_gravity_well", echo_state: "echo_unlikely", echo_density: 0.1, stabilized_echo_density: 0.06, stability_return_state: "still_resolving", recovery_color: "Red", chamber_influence: 0.669 },
+        { chamber: "Recursive Echo Satellite", type: "Echo Chamber", coherence: 0.73, congruence: 0.69, instability: 0.51, haunt_density: 0.77, severity: 3.7, instability_score: 0.363, current_state: "recursive_echo", state_color: "Violet", branch_path: "echo_resolution_path", GRE: 0.507, amplified_haunt_density: 0.965, GR: 1.0, gravity_well_state: "strong_gravity_well", echo_state: "echo_unlikely", echo_density: 0.1, stabilized_echo_density: 0.031, stability_return_state: "partial_recovery", recovery_color: "Green", chamber_influence: 0.819 },
+        { chamber: "Stabilization Basin", type: "Recovery Chamber", coherence: 0.88, congruence: 0.83, instability: 0.21, haunt_density: 0.19, severity: 1.9, instability_score: 0.167, current_state: "resonant", state_color: "Gold", branch_path: "amplification_path", GRE: 0.167, amplified_haunt_density: 0.206, GR: 0.875, gravity_well_state: "medium_gravity_well", echo_state: "echo_unlikely", echo_density: 0.1, stabilized_echo_density: 0.0, stability_return_state: "stability_returned", recovery_color: "Blue", chamber_influence: 0.479 }
+      ],
+      pathways: [
+        { chamber: "Conversion Junction", resonance_frequency: 0.62, equilibrium_range: 0.12, refraction_index: 1.2, amplitude: 0.7, phase: 0.0, incoming_angle_deg: 35, refracted_angle_deg: 28.554, signal_frequency: 0.66, gate_state: "pathway_open", pathway_switch: "enter_chamber_pathway", next_corridor: "Conversion Junction", flow_x: 0.22, flow_y: 0.119, flow_magnitude: 0.25, GR: 1.0, GRE: 0.365, amplified_haunt_density: 0.686, echo_density: 0.1, dynamic_curvature: 0.504, propagation_stream: "open_stream", recursive_traffic: "normal_flow" },
+        { chamber: "Core Manifold", resonance_frequency: 0.48, equilibrium_range: 0.1, refraction_index: 1.55, amplitude: 0.85, phase: 0.35, incoming_angle_deg: 35, refracted_angle_deg: 21.719, signal_frequency: 0.66, gate_state: "pathway_closed", pathway_switch: "deflect_to_adjacent_corridor", next_corridor: "adjacent_refraction_corridor", flow_x: 0.0, flow_y: 0.0, flow_magnitude: 0.0, GR: 1.0, GRE: 0.478, amplified_haunt_density: 0.595, echo_density: 0.1, dynamic_curvature: 0.519, propagation_stream: "deflected_stream", recursive_traffic: "normal_flow" },
+        { chamber: "Ingestion Gate", resonance_frequency: 0.4, equilibrium_range: 0.08, refraction_index: 1.35, amplitude: 0.65, phase: 0.7, incoming_angle_deg: 35, refracted_angle_deg: 25.143, signal_frequency: 0.66, gate_state: "pathway_closed", pathway_switch: "deflect_to_adjacent_corridor", next_corridor: "adjacent_refraction_corridor", flow_x: 0.0, flow_y: 0.0, flow_magnitude: 0.0, GR: 1.0, GRE: 0.445, amplified_haunt_density: 0.269, echo_density: 0.1, dynamic_curvature: 0.462, propagation_stream: "deflected_stream", recursive_traffic: "normal_flow" },
+        { chamber: "Recursive Echo Satellite", resonance_frequency: 0.74, equilibrium_range: 0.14, refraction_index: 1.8, amplitude: 0.9, phase: 1.1, incoming_angle_deg: 35, refracted_angle_deg: 18.582, signal_frequency: 0.66, gate_state: "pathway_open", pathway_switch: "enter_chamber_pathway", next_corridor: "Recursive Echo Satellite", flow_x: 0.237, flow_y: 0.08, flow_magnitude: 0.25, GR: 1.0, GRE: 0.507, amplified_haunt_density: 0.965, echo_density: 0.1, dynamic_curvature: 0.581, propagation_stream: "open_stream", recursive_traffic: "normal_flow" },
+        { chamber: "Stabilization Basin", resonance_frequency: 0.68, equilibrium_range: 0.16, refraction_index: 1.05, amplitude: 0.55, phase: 1.45, incoming_angle_deg: 35, refracted_angle_deg: 33.111, signal_frequency: 0.66, gate_state: "pathway_open", pathway_switch: "enter_chamber_pathway", next_corridor: "Stabilization Basin", flow_x: 0.209, flow_y: 0.137, flow_magnitude: 0.25, GR: 0.875, GRE: 0.167, amplified_haunt_density: 0.206, echo_density: 0.1, dynamic_curvature: 0.345, propagation_stream: "open_stream", recursive_traffic: "normal_flow" }
+      ],
+      sigils: [
+        { sigil: "Observe", glyph: "◉", intent: "reveal_state", target_type: "any", function_route: "Integral Ecology Memory", effect_type: "reveal", intensity: "gentle", safety_rule: "non_coercive" },
+        { sigil: "Align", glyph: "△", intent: "improve_threshold_alignment", target_type: "threshold", function_route: "Threshold Gate Ecology", effect_type: "align", intensity: "moderate", safety_rule: "non_coercive" },
+        { sigil: "Disperse", glyph: "∿", intent: "reduce_pressure_saturation", target_type: "corridor", function_route: "Pressure Pathways", effect_type: "disperse", intensity: "moderate", safety_rule: "non_coercive" },
+        { sigil: "Anchor", glyph: "⬖", intent: "increase_stabilization_diffusion", target_type: "chamber", function_route: "Stabilization Diffusion", effect_type: "stabilize", intensity: "gentle", safety_rule: "non_coercive" },
+        { sigil: "Echo", glyph: "⌁", intent: "inspect_recursive_traffic", target_type: "echo", function_route: "Recursive Traffic", effect_type: "inspect", intensity: "gentle", safety_rule: "non_coercive" }
+      ],
+      instruments: [
+        { id: "emf", name: "EMF Pressure", shortcut: ":emf", fn: "Electromagnetic anomaly and chamber pressure spikes", unit: "mG", accent: "#73ff9a", statusLabels: ["nominal", "elevated", "critical"], thresholds: [3, 7], read: () => 0.2 + Math.random() * 9.6, format: value => value.toFixed(1), scale: value => Math.min(100, value * 10) },
+        { id: "thermal", name: "Thermal Integrity", shortcut: ":tis", fn: "Cold spot formation across spectral layers", unit: "C Δ", accent: "#45f0dd", statusLabels: ["stable", "cold spot", "breach"], thresholds: [0, -3], invert: true, read: () => Math.random() > 0.3 ? 14 + Math.random() * 18 : -(Math.random() * 8), format: value => value.toFixed(1), scale: value => Math.min(100, Math.max(0, ((value + 8) / 40) * 100)) },
+        { id: "sls", name: "SLS Lattice", shortcut: ":sls", fn: "Structured-light lattice form detection", unit: "forms", accent: "#ffcc66", statusLabels: ["clear", "detected", "multiple"], thresholds: [1, 2], read: () => Math.floor(Math.random() * 4), format: value => String(value), scale: value => Math.min(100, (value / 3) * 100) },
+        { id: "evp", name: "EVP Signal", shortcut: ":evp", fn: "ITC band voice and signal capture", unit: "dB", accent: "#c079ff", statusLabels: ["silence", "signal", "voice lock"], thresholds: [20, 60], read: () => Math.random() * 100, format: value => value.toFixed(0), scale: value => Math.min(100, value) },
+        { id: "spatial", name: "Spatial Rift", shortcut: ":sds", fn: "Local geometry fold and rift index", unit: "RI", accent: "#45f0dd", statusLabels: ["flat", "warped", "rift open"], thresholds: [2, 6], read: () => Math.random() * 10, format: value => value.toFixed(2), scale: value => Math.min(100, value * 10) },
+        { id: "ghoul", name: "Resonance Index", shortcut: ":gri", fn: "Entity resonance against codex baseline", unit: "GRI", accent: "#ff5b6e", statusLabels: ["inert", "resonant", "entity lock"], thresholds: [3.5, 7], read: () => Math.random() * 9.9, format: value => value.toFixed(1), scale: value => Math.min(100, value * 10) },
+        { id: "haunt", name: "Haunt Pressure", shortcut: ":hpm", fn: "Psychokinetic saturation across haunt field", unit: "hPa", accent: "#ffcc66", statusLabels: ["low", "moderate", "extreme"], thresholds: [30, 70], read: () => Math.random() * 100, format: value => value.toFixed(0), scale: value => Math.min(100, value) },
+        { id: "echo", name: "Echo Trace", shortcut: ":ete", fn: "Temporal echo replay and trace capture", unit: "traces", accent: "#73ff9a", statusLabels: ["silent", "traces", "replay"], thresholds: [1, 5], read: () => Math.floor(Math.random() * 12), format: value => String(value), scale: value => Math.min(100, (value / 12) * 100) }
+      ]
+    };
+
+    const WORKDAY_TASKS = [
+      { id: "loop", text: "Render floor investigation loop", meta: "floor model / room entry", auto: "loop" },
+      { id: "transmit", text: "Transmit end-of-shift HQ report", meta: "building status / objective audit", auto: "report" }
+    ];
+
+    const RITUAL_RULES = {
+      "Metamorphosis Chamber": ["Observe", "Align", "Anchor"],
+      "Pressure Core": ["Observe", "Disperse", "Anchor"],
+      "Threshold Intake": ["Observe", "Align", "Disperse"],
+      "Echo Chamber": ["Observe", "Echo", "Anchor"],
+      "Recovery Chamber": ["Observe", "Anchor"]
+    };
+
+    const ROOM_SCENES = {
+      "Metamorphosis Chamber": "../assets/metamorphosis-sanctuary.png"
+    };
+
+    const COLORS = { Cyan: "#45f0dd", Blue: "#5f8cff", Gold: "#ffcc66", Green: "#73ff9a", Red: "#ff5b6e", Violet: "#c079ff" };
+    const state = {
+      selected: 0,
+      activeSigil: null,
+      activeInstruments: new Set(),
+      readings: {},
+      time: 0,
+      instrumentsExpanded: false,
+      dossierCollapsed: false,
+      roomView: null,
+      investigationLoopRendered: false,
+      workDayTasks: [],
+      reportSent: false,
+      cleansedRooms: new Set(),
+      ritualLog: [],
+      roomSequences: {}
+    };
+    const $ = selector => document.querySelector(selector);
+    const canvas = $("#pathwayCanvas");
+    const ctx = canvas.getContext("2d");
+    const terminalOutput = $("#terminal-output");
+    const terminalInput = $("#terminal-input");
+    const roomSceneImages = {};
+
+    function pct(value) { return `${Math.round(value * 100)}%`; }
+    function fixed(value, digits = 3) { return Number(value).toFixed(digits); }
+    function label(value) { return String(value).replaceAll("_", " "); }
+    function colorFor(chamber) { return COLORS[chamber.state_color] || COLORS.Cyan; }
+    function pathwayFor(chamber) { return DATA.pathways.find(pathway => pathway.chamber === chamber.chamber); }
+    function sceneFor(chamber) { return roomSceneImages[chamber.type]; }
+    function roomTaskId(index) { return `cleanse-${index}`; }
+    function ritualRuleFor(chamber) { return RITUAL_RULES[chamber.type] || ["Observe", "Anchor"]; }
+    function ritualSequenceFor(index) { return state.roomSequences[index] || []; }
+    function ritualSequenceLabel(sequence) { return sequence.length ? sequence.join(" > ") : "none"; }
+    function sequencesMatch(input, required) {
+      return input.length === required.length && input.every((name, index) => name === required[index]);
+    }
+    function ritualVerificationId(chamber, sequence) {
+      return `${chamber.chamber}:${sequence.join(">")}`.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+    function allRoomsCleansed() { return state.cleansedRooms.size === DATA.chambers.length; }
+    function reportReady() { return state.investigationLoopRendered && state.workDayTasks.length > 0; }
+    function createWorkDayTasks() {
+      return [
+        { ...WORKDAY_TASKS[0], done: state.investigationLoopRendered },
+        ...DATA.chambers.map((chamber, index) => ({
+          id: roomTaskId(index),
+          text: `Cleanse ${chamber.chamber}`,
+          meta: `${label(chamber.type)} / ${ritualRuleFor(chamber).join(" > ")}`,
+          auto: "ritual",
+          done: state.cleansedRooms.has(index)
+        })),
+        { ...WORKDAY_TASKS[1], done: state.reportSent }
+      ];
+    }
+    function syncCleanseTasks() {
+      state.workDayTasks.forEach(task => {
+        if (task.id === "loop") task.done = state.investigationLoopRendered;
+        if (task.auto === "report") task.done = state.reportSent;
+        if (task.id.startsWith("cleanse-")) {
+          task.done = state.cleansedRooms.has(Number(task.id.replace("cleanse-", "")));
+        }
+      });
+    }
+
+    Object.entries(ROOM_SCENES).forEach(([type, src]) => {
+      const image = new Image();
+      image.onload = () => requestAnimationFrame(drawPathwayMap);
+      image.src = src;
+      roomSceneImages[type] = image;
+    });
+
+    function renderSnapshot() {
+      $("#snapshot").innerHTML = [
+        ["Integrity", pct(DATA.dashboard.system_integrity_score)],
+        ["Avg GRE", fixed(DATA.dashboard.average_GRE)],
+        ["Avg GR", fixed(DATA.dashboard.average_GR)],
+        ["Echo", fixed(DATA.dashboard.average_echo_density)]
+      ].map(([name, value]) => `<div class="metric"><div class="metric-label">${name}</div><div class="metric-value">${value}</div></div>`).join("");
+    }
+
+    function renderWorkdayFlow() {
+      syncCleanseTasks();
+      const tasks = state.workDayTasks.length ? state.workDayTasks : WORKDAY_TASKS.map(task => ({ ...task, done: false }));
+      const done = state.workDayTasks.filter(task => task.done).length;
+      const total = state.workDayTasks.length;
+      $("#flow-progress").textContent = `${done}/${total || WORKDAY_TASKS.length}`;
+      $("#workday-flow").innerHTML = tasks.map((task, index) => `
+        <div class="flow-step ${task.done ? "done" : ""} ${state.workDayTasks.length ? "" : "locked"}">
+          <span>${task.done ? "✓" : index + 1}</span>
+          <span>${task.text}</span>
+        </div>
+      `).join("");
+      $("#flow-send-report").disabled = !reportReady() || state.reportSent;
+      $("#flow-send-report").textContent = state.reportSent ? "Sent" : "HQ Report";
+    }
+
+    function renderChambers() {
+      $("#chamber-list").innerHTML = DATA.chambers.map((chamber, index) => `
+        <button class="chamber-row ${index === state.selected ? "active" : ""}" data-index="${index}" style="--state-color:${colorFor(chamber)}; --value:${chamber.instability_score}">
+          <div class="row-top">
+            <div class="row-name">${chamber.chamber}</div>
+            <div class="row-severity">${chamber.severity.toFixed(1)}</div>
+          </div>
+          <div class="row-type">${chamber.type} / ${label(chamber.current_state)}</div>
+          <div class="bar"><div class="bar-fill"></div></div>
+        </button>
+      `).join("");
+    }
+
+    function renderDossier() {
+      const chamber = DATA.chambers[state.selected];
+      const pathway = pathwayFor(chamber);
+      $("#panel-dossier").style.setProperty("--active", colorFor(chamber));
+      $("#dossier-index").textContent = `${state.selected + 1}/${DATA.chambers.length}`;
+      $("#dossier-name").textContent = chamber.chamber;
+      $("#dossier-type").textContent = chamber.type;
+      $("#state-pill").textContent = label(chamber.current_state);
+      $("#gate-state").textContent = label(pathway.gate_state);
+
+      $("#dossier-grid").innerHTML = [
+        ["Coherence", pct(chamber.coherence)],
+        ["Congruence", pct(chamber.congruence)],
+        ["Instability", pct(chamber.instability)],
+        ["Haunt", pct(chamber.haunt_density)],
+        ["GRE", fixed(chamber.GRE)],
+        ["Influence", pct(chamber.chamber_influence)]
+      ].map(([name, value]) => `<div class="readout"><div class="readout-label">${name}</div><div class="readout-value">${value}</div></div>`).join("");
+
+      $("#route-lines").innerHTML = `
+        <div><b>Branch:</b> ${label(chamber.branch_path)}</div>
+        <div><b>Gravity:</b> ${label(chamber.gravity_well_state)} / GR ${fixed(chamber.GR)}</div>
+        <div><b>Echo:</b> ${label(chamber.echo_state)} / stabilized ${fixed(chamber.stabilized_echo_density)}</div>
+        <div><b>Recovery:</b> ${label(chamber.stability_return_state)}</div>
+        <div><b>Refraction:</b> ${pathway.incoming_angle_deg}° to ${pathway.refracted_angle_deg}°</div>
+        <div><b>Stream:</b> ${label(pathway.propagation_stream)} / ${label(pathway.recursive_traffic)}</div>
+      `;
+
+      $("#selected-strip").innerHTML = [
+        ["Selected", chamber.chamber],
+        ["Gate", label(pathway.gate_state)],
+        ["Purified", state.cleansedRooms.has(state.selected) ? "verified" : "unverified"],
+        ["Sequence", ritualSequenceLabel(ritualSequenceFor(state.selected))]
+      ].map(([name, value]) => `<div class="strip-cell"><div class="strip-label">${name}</div><div class="strip-value">${value}</div></div>`).join("");
+
+      renderTaskPanel();
+    }
+
+    function taskGateReady() {
+      return reportReady() && allRoomsCleansed();
+    }
+
+    function renderTaskPanel() {
+      syncCleanseTasks();
+      const total = state.workDayTasks.length;
+      const done = state.workDayTasks.filter(task => task.done).length;
+      $("#task-progress").textContent = `${done}/${total}`;
+
+      if (!total) {
+        $("#task-list").innerHTML = `<div class="task-empty">No work day loaded. Start a work day to populate the investigation task list for end-of-shift HQ reporting.</div>`;
+      } else {
+        $("#task-list").innerHTML = state.workDayTasks.map(task => `
+          <button class="task-row ${task.done ? "done" : ""}" data-task="${task.id}" type="button">
+            <span class="task-check">${task.done ? "✓" : ""}</span>
+            <span class="task-copy">
+              ${task.text}
+              <span class="task-meta">${task.meta}</span>
+            </span>
+          </button>
+        `).join("");
+      }
+
+      const canReport = reportReady();
+      const cleansed = allRoomsCleansed();
+      $("#send-report").disabled = !canReport || state.reportSent;
+      $("#send-report").textContent = state.reportSent ? "Report Sent" : "Send HQ Report";
+      $("#task-status").textContent = !total
+        ? "HQ report queue empty."
+        : state.reportSent
+          ? "End-of-shift report transmitted to HQ."
+          : !canReport
+            ? "Report locked: waiting for investigation loop render."
+            : cleansed
+              ? "Building cleansed. HQ report ready."
+              : "Building haunted. HQ report will require failure explanation.";
+      renderWorkdayFlow();
+    }
+
+    function loadWorkDayTasks() {
+      state.reportSent = false;
+      state.workDayTasks = createWorkDayTasks();
+      renderTaskPanel();
+      appendTerminal([
+        { type: "system", text: "WORK DAY TASK LIST LOADED" },
+        { type: "response", text: `${DATA.chambers.length} rooms must be purified before HQ can receive a clean-building report.` }
+      ]);
+    }
+
+    function toggleTask(id) {
+      const task = state.workDayTasks.find(item => item.id === id);
+      if (!task || task.auto) return;
+      task.done = !task.done;
+      renderTaskPanel();
+    }
+
+    function sendHQReport() {
+      if (!reportReady() || state.reportSent) return;
+      const cleansed = allRoomsCleansed();
+      const missing = DATA.chambers
+        .map((chamber, index) => state.cleansedRooms.has(index) ? null : chamber.chamber)
+        .filter(Boolean);
+      const failed = state.ritualLog.filter(entry => entry.status === "failed");
+      state.reportSent = true;
+      syncCleanseTasks();
+      renderTaskPanel();
+      appendTerminal([
+        { type: cleansed ? "system" : "error", text: `END-OF-SHIFT REPORT SENT TO HQ / BUILDING STATUS: ${cleansed ? "CLEANSED" : "HAUNTED"}` },
+        { type: "response", text: cleansed
+          ? `${DATA.chambers.length}/${DATA.chambers.length} room purifications verified. Building stability restored.`
+          : `Failed task objectives: ${missing.length} room(s) remain unpurified: ${missing.join(", ")}.` },
+        { type: cleansed ? "response" : "error", text: cleansed
+          ? "All sigil ritual sequences matched anomaly type requirements."
+          : `HQ explanation: purification could not be verified because required sigil sequences were incomplete or mismatched${failed.length ? `; ${failed.length} failed ritual attempt(s) logged` : ""}.` }
+      ]);
+    }
+
+    function renderSigils() {
+      const chamber = DATA.chambers[state.selected];
+      const sigil = state.activeSigil;
+      const requiredSequence = ritualRuleFor(chamber);
+      const currentSequence = ritualSequenceFor(state.selected);
+      const ritualColor = sigil ? colorFor(chamber) : COLORS.Cyan;
+      $("#active-sigil-label").textContent = sigil ? sigil.sigil : "none";
+      $("#ritual-panel").style.setProperty("--ritual", ritualColor);
+      $("#ritual-glyph").textContent = sigil ? sigil.glyph : "◌";
+      $("#ritual-name").textContent = sigil ? `${sigil.sigil} / ${label(sigil.effect_type)}` : "No Sigil Bound";
+      $("#ritual-route").textContent = state.cleansedRooms.has(state.selected)
+        ? "Purification verified for this room."
+        : `Required: ${requiredSequence.join(" > ")}`;
+      $("#ritual-grid").innerHTML = [
+        ["Anomaly", label(chamber.type)],
+        ["Sequence", ritualSequenceLabel(currentSequence)],
+        ["Intensity", sigil ? label(sigil.intensity) : "standby"],
+        ["Safety", sigil ? label(sigil.safety_rule) : "unbound"]
+      ].map(([name, value]) => `
+        <div class="ritual-cell">
+          <div class="metric-label">${name}</div>
+          <div class="ritual-cell-value">${value}</div>
+        </div>
+      `).join("");
+      $("#sigil-bank").innerHTML = DATA.sigils.map((sigil, index) => `
+        <button class="sigil-btn ${state.activeSigil?.sigil === sigil.sigil ? "active" : ""}" data-sigil="${index}" title="${sigil.intent}">
+          <span class="sigil-glyph">${sigil.glyph}</span>
+          <span class="sigil-name">${sigil.sigil}</span>
+        </button>
+      `).join("");
+    }
+
+    function instrumentStatus(instrument, value) {
+      if (instrument.invert) {
+        if (value <= instrument.thresholds[1]) return 2;
+        if (value <= instrument.thresholds[0]) return 1;
+        return 0;
+      }
+      if (value >= instrument.thresholds[1]) return 2;
+      if (value >= instrument.thresholds[0]) return 1;
+      return 0;
+    }
+
+    function updateInstrumentSummary() {
+      const warningCount = DATA.instruments.reduce((count, instrument) => {
+        const reading = state.readings[instrument.id];
+        return count + (reading && reading.status > 0 ? 1 : 0);
+      }, 0);
+      $("#instrument-active-count").textContent = `${state.activeInstruments.size} active`;
+      $("#instrument-alert-count").textContent = `${warningCount} warnings`;
+      $("#instrument-warning").classList.toggle("hot", warningCount > 0);
+    }
+
+    function setInstrumentArrayExpanded(expanded) {
+      state.instrumentsExpanded = expanded;
+      $("#app").classList.toggle("instruments-expanded", expanded);
+      $("#instrument-toggle").setAttribute("aria-expanded", String(expanded));
+      $("#instrument-toggle").setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} spectral instrument array`);
+    }
+
+    function setDossierCollapsed(collapsed) {
+      state.dossierCollapsed = collapsed;
+      $("#app").classList.toggle("dossier-collapsed", collapsed);
+      $("#dossier-toggle").setAttribute("aria-expanded", String(!collapsed));
+      $("#dossier-toggle").setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} active dossier`);
+    }
+
+    function createInstrumentReading(instrument) {
+      const raw = instrument.read();
+      const status = instrumentStatus(instrument, raw);
+      return {
+        raw,
+        display: instrument.format(raw),
+        pct: Math.round(instrument.scale(raw)),
+        status,
+        label: instrument.statusLabels[status]
+      };
+    }
+
+    function dispatchInstrumentReading(instrument, reading, action = "reading") {
+      if (instrument.id !== "emf" && instrument.id !== "sls") return;
+      window.dispatchEvent(new CustomEvent("codex-instrument-reading", {
+        detail: {
+          action,
+          id: instrument.id,
+          raw: reading.raw,
+          pct: reading.pct,
+          status: reading.status,
+          label: reading.label,
+          active: state.activeInstruments.has(instrument.id)
+        }
+      }));
+    }
+
+    function renderInstruments() {
+      $("#instrument-grid").innerHTML = DATA.instruments.map(instrument => {
+        const reading = state.readings[instrument.id] || createInstrumentReading(instrument);
+        state.readings[instrument.id] = reading;
+        dispatchInstrumentReading(instrument, reading);
+        const className = reading.status === 2 ? "critical" : reading.status === 1 ? "warn" : "";
+        return `
+          <button class="instrument-card ${className} ${state.activeInstruments.has(instrument.id) ? "active" : ""}" data-instrument="${instrument.id}" style="--inst:${instrument.accent}; --pct:${reading.pct}%;" title="${instrument.fn}">
+            <div class="inst-top">
+              <div class="inst-name">${instrument.name}</div>
+              <div class="inst-shortcut">${instrument.shortcut}</div>
+            </div>
+            <div class="wave-box"><div class="wave-line"></div></div>
+            <div>
+              <div class="inst-reading-row">
+                <div><span class="inst-reading" id="inst-rdg-${instrument.id}">${reading.display}</span><span class="inst-unit">${instrument.unit}</span></div>
+                <div class="inst-status" id="inst-stat-${instrument.id}">${reading.label}</div>
+              </div>
+              <div class="inst-bar"><div class="inst-bar-fill" id="inst-bar-${instrument.id}"></div></div>
+            </div>
+          </button>
+        `;
+      }).join("");
+      updateInstrumentSummary();
+    }
+
+    function refreshInstruments() {
+      DATA.instruments.forEach(instrument => {
+        const reading = createInstrumentReading(instrument);
+        state.readings[instrument.id] = reading;
+        const card = document.querySelector(`[data-instrument="${instrument.id}"]`);
+        const rdg = $(`#inst-rdg-${instrument.id}`);
+        const stat = $(`#inst-stat-${instrument.id}`);
+        const bar = $(`#inst-bar-${instrument.id}`);
+        if (!card || !rdg || !stat || !bar) return;
+        card.style.setProperty("--pct", `${reading.pct}%`);
+        card.classList.toggle("warn", reading.status === 1);
+        card.classList.toggle("critical", reading.status === 2);
+        rdg.textContent = reading.display;
+        stat.textContent = reading.label;
+        dispatchInstrumentReading(instrument, reading);
+      });
+      updateInstrumentSummary();
+    }
+
+    function renderAll() {
+      renderSnapshot();
+      renderWorkdayFlow();
+      renderChambers();
+      renderDossier();
+      renderSigils();
+      renderInstruments();
+    }
+
+    function appendTerminal(lines) {
+      lines.forEach(line => {
+        const div = document.createElement("div");
+        div.className = "t-line";
+        div.innerHTML = `<span class="${line.type}">${line.text}</span>`;
+        terminalOutput.appendChild(div);
+      });
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    function observeSummary() {
+      const chamber = DATA.chambers[state.selected];
+      const pathway = pathwayFor(chamber);
+      return [
+        { type: "system", text: `CHAMBER DOSSIER: ${chamber.chamber}` },
+        { type: "response", text: `State ${label(chamber.current_state)} | Severity ${chamber.severity.toFixed(1)} | Instability ${pct(chamber.instability)}` },
+        { type: "response", text: `Gate ${label(pathway.gate_state)} | Stream ${label(pathway.propagation_stream)} | Curvature ${fixed(pathway.dynamic_curvature)}` }
+      ];
+    }
+
+    function selectChamber(index, announce = true) {
+      state.selected = index;
+      renderAll();
+      if (announce) appendTerminal([{ type: "system", text: `OBSERVING ${DATA.chambers[index].chamber.toUpperCase()}` }]);
+    }
+
+    function setRoomView(index) {
+      state.roomView = index;
+      $("#app").classList.toggle("room-view-active", index !== null);
+      if (index !== null) {
+        selectChamber(index);
+        setInstrumentArrayExpanded(true);
+      } else {
+        setInstrumentArrayExpanded(false);
+      }
+    }
+
+    function activateSigil(index, echoPrompt = true) {
+      const sigil = DATA.sigils[index];
+      const chamber = DATA.chambers[state.selected];
+      const sequence = ritualSequenceFor(state.selected);
+      if (state.cleansedRooms.has(state.selected)) {
+        state.activeSigil = sigil;
+        renderAll();
+        appendTerminal([
+          ...(echoPrompt ? [{ type: "prompt", text: `CRYPTIC://> sigil ${sigil.sigil.toLowerCase()}` }] : []),
+          { type: "system", text: `${chamber.chamber} is already purified. Ritual sequence remains verified.` }
+        ]);
+        return;
+      }
+      if (sequence.length >= ritualRuleFor(chamber).length) sequence.length = 0;
+      sequence.push(sigil.sigil);
+      state.roomSequences[state.selected] = sequence;
+      state.activeSigil = sigil;
+      renderAll();
+      appendTerminal([
+        ...(echoPrompt ? [{ type: "prompt", text: `CRYPTIC://> sigil ${sigil.sigil.toLowerCase()}` }] : []),
+        { type: "sigil", text: `${sigil.glyph} ${sigil.sigil.toUpperCase()} routed through ${sigil.function_route}` },
+        { type: "response", text: `Executed sequence step ${sequence.length}/${ritualRuleFor(chamber).length} for ${chamber.chamber}: ${ritualSequenceLabel(sequence)}.` }
+      ]);
+    }
+
+    function completeRitualExorcism() {
+      const chamber = DATA.chambers[state.selected];
+      const pathway = pathwayFor(chamber);
+      const required = ritualRuleFor(chamber);
+      const sequence = ritualSequenceFor(state.selected);
+      if (!state.activeSigil) {
+        return [{ type: "error", text: "No sigil bound. Select a sigil or run stabilize before exorcise." }];
+      }
+      if (!sequencesMatch(sequence, required)) {
+        const verificationId = ritualVerificationId(chamber, sequence);
+        state.ritualLog.push({
+          room: chamber.chamber,
+          verificationId,
+          sequence: [...sequence],
+          required: [...required],
+          status: "failed"
+        });
+        renderAll();
+        return [
+          { type: "error", text: `${chamber.chamber} purification failed. Sigil ritual sequence does not match anomaly type.` },
+          { type: "response", text: `Verification ${verificationId}: entered ${ritualSequenceLabel(sequence)} / required ${required.join(" > ")}.` }
+        ];
+      }
+      const verificationId = ritualVerificationId(chamber, sequence);
+      state.cleansedRooms.add(state.selected);
+      state.ritualLog.push({
+        room: chamber.chamber,
+        verificationId,
+        sequence: [...sequence],
+        required: [...required],
+        sigil: state.activeSigil.sigil,
+        status: "verified"
+      });
+      syncCleanseTasks();
+      renderAll();
+      return [
+        { type: "sigil", text: `${state.activeSigil.glyph} ${state.activeSigil.sigil.toUpperCase()} COMMAND RITUAL EXECUTED` },
+        { type: "response", text: `Verification ${verificationId}: ${chamber.chamber} anomaly purified with ${required.join(" > ")}.` },
+        { type: "system", text: `${state.cleansedRooms.size}/${DATA.chambers.length} rooms cleansed. ${label(pathway.gate_state)} stability reconciled.` }
+      ];
+    }
+
+    function toggleInstrument(id) {
+      const instrument = DATA.instruments.find(item => item.id === id);
+      if (!instrument) return;
+      if (state.activeInstruments.has(id)) {
+        state.activeInstruments.delete(id);
+      } else {
+        state.activeInstruments.add(id);
+      }
+      renderInstruments();
+      const reading = state.readings[id];
+      dispatchInstrumentReading(instrument, reading, "toggle");
+      appendTerminal([
+        { type: reading.status === 2 ? "error" : "system", text: `${instrument.name.toUpperCase()} ${state.activeInstruments.has(id) ? "ARMED" : "STANDBY"}` },
+        { type: "response", text: `${reading.display} ${instrument.unit} / ${reading.label} / ${instrument.fn}` }
+      ]);
+    }
+
+    function instrumentReport(instrument) {
+      const reading = state.readings[instrument.id] || createInstrumentReading(instrument);
+      state.readings[instrument.id] = reading;
+      return [
+        { type: reading.status === 2 ? "error" : reading.status === 1 ? "system" : "response", text: `${instrument.shortcut} ${instrument.name}: ${reading.display} ${instrument.unit} / ${reading.label}` },
+        { type: "response", text: instrument.fn }
+      ];
+    }
+
+    const COMMANDS = {
+      help: () => [
+        { type: "system", text: "Commands: help, observe, stabilize, pathways, sigils, sigil <name>, instruments, ritual, exorcise, workday, report, next, prev, clear" },
+        { type: "response", text: "Instrument shortcuts: :emf, :tis, :sls, :evp, :sds, :gri, :hpm, :ete" }
+      ],
+      observe: observeSummary,
+      stabilize: () => {
+        const chamber = DATA.chambers[state.selected];
+        const sequence = ritualSequenceFor(state.selected);
+        state.activeSigil = DATA.sigils.find(sigil => sigil.sigil === "Anchor");
+        if (!state.cleansedRooms.has(state.selected)) {
+          if (sequence.length >= ritualRuleFor(chamber).length) sequence.length = 0;
+          sequence.push(state.activeSigil.sigil);
+          state.roomSequences[state.selected] = sequence;
+        }
+        renderAll();
+        return [
+          { type: "sigil", text: `${state.activeSigil.glyph} ANCHOR selected` },
+          { type: "response", text: `Sequence for ${chamber.chamber}: ${ritualSequenceLabel(sequence)}.` }
+        ];
+      },
+      pathways: () => DATA.pathways.map(pathway => ({
+        type: pathway.gate_state === "pathway_open" ? "response" : "error",
+        text: `${pathway.chamber}: ${label(pathway.gate_state)} / ${label(pathway.pathway_switch)} / curvature ${fixed(pathway.dynamic_curvature)}`
+      })),
+      sigils: () => DATA.sigils.map(sigil => ({
+        type: "sigil",
+        text: `${sigil.glyph} ${sigil.sigil.padEnd(8)} ${label(sigil.effect_type)} via ${sigil.function_route}`
+      })),
+      sigil: args => {
+        const name = args.join(" ").trim();
+        if (!name) {
+          return [{ type: "response", text: "Usage: sigil observe | sigil align | sigil disperse | sigil anchor | sigil echo" }];
+        }
+        const index = DATA.sigils.findIndex(sigil => sigil.sigil.toLowerCase() === name);
+        if (index < 0) {
+          return [{ type: "error", text: `Unknown sigil "${name}". Run sigils to inspect the ritual bank.` }];
+        }
+        activateSigil(index, false);
+        return [];
+      },
+      instruments: () => DATA.instruments.map(instrument => {
+        const reading = state.readings[instrument.id] || createInstrumentReading(instrument);
+        state.readings[instrument.id] = reading;
+        return {
+          type: reading.status === 2 ? "error" : reading.status === 1 ? "system" : "response",
+          text: `${instrument.shortcut} ${instrument.name.padEnd(18)} ${reading.display} ${instrument.unit} / ${reading.label}`
+        };
+      }),
+      ritual: completeRitualExorcism,
+      exorcise: completeRitualExorcism,
+      workday: () => {
+        loadWorkDayTasks();
+        return [];
+      },
+      report: () => {
+        if (!reportReady()) {
+          return [{ type: "error", text: "HQ report locked. Load the work day and wait for the investigation loop to render." }];
+        }
+        sendHQReport();
+        return [];
+      },
+      next: () => {
+        selectChamber((state.selected + 1) % DATA.chambers.length, false);
+        return observeSummary();
+      },
+      prev: () => {
+        selectChamber((state.selected + DATA.chambers.length - 1) % DATA.chambers.length, false);
+        return observeSummary();
+      },
+      clear: () => {
+        terminalOutput.innerHTML = "";
+        return [];
+      }
+    };
+
+    DATA.instruments.forEach(instrument => {
+      COMMANDS[instrument.shortcut] = () => instrumentReport(instrument);
+    });
+
+    $("#chamber-list").addEventListener("click", event => {
+      const row = event.target.closest("[data-index]");
+      if (row) selectChamber(Number(row.dataset.index));
+    });
+
+    canvas.addEventListener("click", event => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (state.roomView !== null) {
+        const tabs = roomSwitchTabs(rect.width, rect.height);
+        const hitTab = tabs.find(tab => x >= tab.x && x <= tab.x + tab.w && y >= tab.y && y <= tab.y + tab.h);
+        if (hitTab) {
+          setRoomView(hitTab.index);
+          return;
+        }
+        const back = collapseRoomButton(rect.width, rect.height);
+        if (x >= back.x && x <= back.x + back.w && y >= back.y && y <= back.y + back.h) {
+          state.roomView = null;
+          $("#app").classList.remove("room-view-active");
+          setInstrumentArrayExpanded(false);
+          return;
+        }
+      }
+      const room = floorRooms(rect.width, rect.height).find(item =>
+        x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h
+      );
+      if (room) setRoomView(room.index);
+    });
+
+    $("#sigil-bank").addEventListener("click", event => {
+      const button = event.target.closest("[data-sigil]");
+      if (button) activateSigil(Number(button.dataset.sigil));
+    });
+
+    $("#load-workday").addEventListener("click", loadWorkDayTasks);
+    $("#send-report").addEventListener("click", sendHQReport);
+    $("#flow-load-workday").addEventListener("click", loadWorkDayTasks);
+    $("#flow-send-report").addEventListener("click", sendHQReport);
+    $("#task-list").addEventListener("click", event => {
+      const row = event.target.closest("[data-task]");
+      if (row) toggleTask(row.dataset.task);
+    });
+
+    $("#instrument-grid").addEventListener("click", event => {
+      const card = event.target.closest("[data-instrument]");
+      if (card) toggleInstrument(card.dataset.instrument);
+    });
+
+    $("#panel-instruments").addEventListener("click", event => {
+      if (event.target.closest("[data-instrument]")) return;
+      setInstrumentArrayExpanded(!state.instrumentsExpanded);
+    });
+
+    $("#dossier-toggle").addEventListener("click", () => {
+      setDossierCollapsed(!state.dossierCollapsed);
+    });
+
+    terminalInput.addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      const raw = terminalInput.value.trim();
+      if (!raw) return;
+      terminalInput.value = "";
+      appendTerminal([{ type: "prompt", text: `CRYPTIC://> ${raw}` }]);
+      const [command, ...args] = raw.toLowerCase().split(/\s+/);
+      appendTerminal(COMMANDS[command] ? COMMANDS[command](args, raw) : [{ type: "error", text: `Unknown command "${command}". Type help.` }]);
+    });
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function floorRooms(width, height) {
+      const left = Math.max(18, width * 0.035);
+      const top = Math.max(56, height * 0.1);
+      const planW = Math.min(width - left * 2, 920);
+      const planH = Math.min(height - top - 54, 520);
+      const unit = Math.min(planW / 12, planH / 6);
+      const originX = (width - unit * 12) / 2;
+      const originY = top + (planH - unit * 6) / 2;
+      const specs = [
+        { grid: [0, 0, 4, 3], door: "right", zone: "A01" },
+        { grid: [4, 0, 4, 3], door: "bottom", zone: "A02" },
+        { grid: [8, 0, 4, 3], door: "left", zone: "A03" },
+        { grid: [0, 3, 5, 3], door: "right", zone: "B01" },
+        { grid: [5, 3, 7, 3], door: "top", zone: "B02" }
+      ];
+      return DATA.chambers.map((chamber, index) => {
+        const [gx, gy, gw, gh] = specs[index].grid;
+        return {
+          chamber,
+          index,
+          zone: specs[index].zone,
+          door: specs[index].door,
+          x: originX + gx * unit,
+          y: originY + gy * unit,
+          w: gw * unit,
+          h: gh * unit
+        };
+      });
+    }
+
+    function focusedRoomBounds(width, height) {
+      const top = Math.max(48, height * 0.07);
+      const bottomReserve = 58;
+      const availableW = Math.min(width - 48, 1040);
+      const availableH = Math.max(220, height - top - bottomReserve);
+      const roomRatio = 1.48;
+      let roomW = availableW;
+      let roomH = roomW / roomRatio;
+      if (roomH > availableH) {
+        roomH = availableH;
+        roomW = roomH * roomRatio;
+      }
+      return {
+        x: (width - roomW) / 2,
+        y: top + (availableH - roomH) / 2,
+        w: roomW,
+        h: roomH
+      };
+    }
+
+    function collapseRoomButton(width, height) {
+      const room = focusedRoomBounds(width, height);
+      return { x: room.x + room.w - 118, y: Math.max(12, room.y - 38), w: 112, h: 28 };
+    }
+
+    function roomSwitchTabs(width, height) {
+      const gap = 6;
+      const totalGap = gap * (DATA.chambers.length - 1);
+      const maxW = Math.min(width - 60, 620);
+      const tabW = (maxW - totalGap) / DATA.chambers.length;
+      const x0 = (width - maxW) / 2;
+      const y = height - 42;
+      return DATA.chambers.map((chamber, index) => ({ chamber, index, x: x0 + index * (tabW + gap), y, w: tabW, h: 24 }));
+    }
+
+    function drawRoomSwitchTabs(width, height) {
+      roomSwitchTabs(width, height).forEach(tab => {
+        const selected = tab.index === state.selected;
+        const cleansed = state.cleansedRooms.has(tab.index);
+        const color = cleansed ? COLORS.Green : colorFor(tab.chamber);
+        ctx.save();
+        ctx.fillStyle = selected ? `${color}28` : "rgba(7, 17, 19, 0.86)";
+        ctx.strokeStyle = selected ? color : "rgba(69, 240, 221, 0.18)";
+        ctx.lineWidth = selected ? 1.5 : 1;
+        ctx.fillRect(tab.x, tab.y, tab.w, tab.h);
+        ctx.strokeRect(tab.x, tab.y, tab.w, tab.h);
+        ctx.fillStyle = selected ? "#d8fff8" : "#83aaa9";
+        ctx.font = "8px Share Tech Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(tab.chamber.chamber.split(" ").map(word => word[0]).join(""), tab.x + tab.w / 2, tab.y + 15);
+        ctx.restore();
+      });
+    }
+
+    function drawImageCover(image, x, y, w, h) {
+      const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+      const sw = w / scale;
+      const sh = h / scale;
+      const sx = (image.naturalWidth - sw) / 2;
+      const sy = (image.naturalHeight - sh) / 2;
+      ctx.drawImage(image, sx, sy, sw, sh, x, y, w, h);
+    }
+
+    function drawFocusedRoom(width, height) {
+      const chamber = DATA.chambers[state.roomView ?? state.selected];
+      const pathway = pathwayFor(chamber);
+      const cleansed = state.cleansedRooms.has(state.selected);
+      const color = cleansed ? COLORS.Green : colorFor(chamber);
+      const scene = sceneFor(chamber);
+      const bounds = focusedRoomBounds(width, height);
+      const room = {
+        chamber,
+        index: state.selected,
+        zone: `ROOM ${state.selected + 1}`,
+        x: bounds.x,
+        y: bounds.y,
+        w: bounds.w,
+        h: bounds.h
+      };
+
+      ctx.save();
+      if (scene?.complete && scene.naturalWidth) {
+        drawImageCover(scene, 0, 0, width, height);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+        ctx.fillRect(0, 0, width, height);
+        const vignette = ctx.createRadialGradient(width * 0.5, height * 0.46, Math.min(width, height) * 0.18, width * 0.5, height * 0.46, Math.max(width, height) * 0.7);
+        vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+        vignette.addColorStop(1, "rgba(0, 0, 0, 0.52)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = "rgba(3, 8, 9, 0.78)";
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      ctx.strokeStyle = "rgba(69, 240, 221, 0.22)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(room.x - 18, room.y - 18, room.w + 36, room.h + 36);
+
+      ctx.fillStyle = scene?.complete && scene.naturalWidth ? "rgba(7, 17, 19, 0.12)" : "#071113";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.fillRect(room.x, room.y, room.w, room.h);
+      ctx.strokeRect(room.x, room.y, room.w, room.h);
+
+      const pulse = Math.sin(state.time * 4) * 0.5 + 0.5;
+      const gradient = ctx.createRadialGradient(
+        room.x + room.w * 0.62,
+        room.y + room.h * 0.46,
+        10,
+        room.x + room.w * 0.62,
+        room.y + room.h * 0.46,
+        Math.min(room.w, room.h) * (0.34 + chamber.instability_score * 0.2 + pulse * 0.03)
+      );
+      gradient.addColorStop(0, `${color}66`);
+      gradient.addColorStop(0.56, `${color}22`);
+      gradient.addColorStop(1, `${color}00`);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(room.x + 8, room.y + 8, room.w - 16, room.h - 16);
+
+      ctx.save();
+      ctx.strokeStyle = `${color}55`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([7, 9]);
+      for (let y = room.y + 32; y < room.y + room.h - 18; y += 34) {
+        ctx.beginPath();
+        ctx.moveTo(room.x + 18, y);
+        ctx.lineTo(room.x + room.w - 18, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.fillStyle = "#d8fff8";
+      ctx.font = "18px Orbitron";
+      ctx.textAlign = "left";
+      ctx.fillText(chamber.chamber.toUpperCase(), room.x + 24, room.y + 42);
+      ctx.fillStyle = "#83aaa9";
+      ctx.font = "11px Share Tech Mono";
+      ctx.fillText(`${chamber.type} / ${label(chamber.current_state)}`, room.x + 24, room.y + 62);
+      ctx.fillText(`Gate ${label(pathway.gate_state)} / Stream ${label(pathway.propagation_stream)}`, room.x + 24, room.y + 82);
+      ctx.fillText(`Purification ${cleansed ? "verified" : "unverified"} / Required ${ritualRuleFor(chamber).join(" > ")}`, room.x + 24, room.y + 102);
+
+      const barW = room.w - 48;
+      const barY = room.y + room.h - 42;
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillRect(room.x + 24, barY, barW, 9);
+      ctx.fillStyle = color;
+      ctx.fillRect(room.x + 24, barY, barW * chamber.instability_score, 9);
+      ctx.fillStyle = "#83aaa9";
+      ctx.font = "9px Share Tech Mono";
+      ctx.fillText(`INSTABILITY ${pct(chamber.instability)} / HAUNT ${pct(chamber.haunt_density)} / SEVERITY ${chamber.severity.toFixed(1)}`, room.x + 24, barY + 26);
+
+      const back = collapseRoomButton(width, height);
+      ctx.fillStyle = "rgba(7, 17, 19, 0.94)";
+      ctx.strokeStyle = "rgba(69, 240, 221, 0.32)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(back.x, back.y, back.w, back.h);
+      ctx.strokeRect(back.x, back.y, back.w, back.h);
+      ctx.fillStyle = "#45f0dd";
+      ctx.font = "9px Share Tech Mono";
+      ctx.textAlign = "center";
+      ctx.fillText("BACK TO FLOOR", back.x + back.w / 2, back.y + 18);
+      ctx.restore();
+
+      drawRoomSwitchTabs(width, height);
+    }
+
+    function drawDoor(room) {
+      const pathway = pathwayFor(room.chamber);
+      const open = pathway.gate_state === "pathway_open";
+      const doorSize = Math.min(54, Math.max(34, Math.min(room.w, room.h) * 0.32));
+      let x1, y1, x2, y2;
+      if (room.door === "right") {
+        x1 = x2 = room.x + room.w;
+        y1 = room.y + room.h / 2 - doorSize / 2;
+        y2 = y1 + doorSize;
+      } else if (room.door === "left") {
+        x1 = x2 = room.x;
+        y1 = room.y + room.h / 2 - doorSize / 2;
+        y2 = y1 + doorSize;
+      } else if (room.door === "top") {
+        y1 = y2 = room.y;
+        x1 = room.x + room.w / 2 - doorSize / 2;
+        x2 = x1 + doorSize;
+      } else {
+        y1 = y2 = room.y + room.h;
+        x1 = room.x + room.w / 2 - doorSize / 2;
+        x2 = x1 + doorSize;
+      }
+      ctx.save();
+      ctx.strokeStyle = open ? "#73ff9a" : "#ff5b6e";
+      ctx.lineWidth = open ? 4 : 3;
+      ctx.setLineDash(open ? [] : [5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawPathwayMap() {
+      state.time += 0.012;
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      ctx.clearRect(0, 0, width, height);
+
+      if (state.roomView !== null) {
+        drawFocusedRoom(width, height);
+        requestAnimationFrame(drawPathwayMap);
+        return;
+      }
+
+      const rooms = floorRooms(width, height);
+      const minX = Math.min(...rooms.map(room => room.x));
+      const minY = Math.min(...rooms.map(room => room.y));
+      const maxX = Math.max(...rooms.map(room => room.x + room.w));
+      const maxY = Math.max(...rooms.map(room => room.y + room.h));
+
+      ctx.save();
+      ctx.fillStyle = "rgba(3, 8, 9, 0.72)";
+      ctx.strokeStyle = "rgba(69, 240, 221, 0.22)";
+      ctx.lineWidth = 2;
+      ctx.fillRect(minX - 18, minY - 18, maxX - minX + 36, maxY - minY + 36);
+      ctx.strokeRect(minX - 18, minY - 18, maxX - minX + 36, maxY - minY + 36);
+
+      ctx.strokeStyle = "rgba(69, 240, 221, 0.08)";
+      ctx.lineWidth = 1;
+      for (let x = minX; x <= maxX; x += 24) {
+        ctx.beginPath();
+        ctx.moveTo(x, minY - 18);
+        ctx.lineTo(x, maxY + 18);
+        ctx.stroke();
+      }
+      for (let y = minY; y <= maxY; y += 24) {
+        ctx.beginPath();
+        ctx.moveTo(minX - 18, y);
+        ctx.lineTo(maxX + 18, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = "rgba(69, 240, 221, 0.055)";
+      ctx.strokeStyle = "rgba(69, 240, 221, 0.2)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(minX + rooms[0].w - 4, minY + rooms[0].h - 10, maxX - minX - rooms[0].w + 8, 20);
+      ctx.strokeRect(minX + rooms[0].w - 4, minY + rooms[0].h - 10, maxX - minX - rooms[0].w + 8, 20);
+      ctx.fillRect(minX + rooms[3].w - 10, minY + rooms[1].h - 4, 20, maxY - minY - rooms[1].h + 8);
+      ctx.strokeRect(minX + rooms[3].w - 10, minY + rooms[1].h - 4, 20, maxY - minY - rooms[1].h + 8);
+      ctx.restore();
+
+      rooms.forEach(room => {
+        const chamber = room.chamber;
+        const selected = room.index === state.selected;
+        const cleansed = state.cleansedRooms.has(room.index);
+        const color = cleansed ? COLORS.Green : colorFor(chamber);
+        const pulse = Math.sin(state.time * 4 + room.index) * 0.5 + 0.5;
+
+        ctx.save();
+        ctx.fillStyle = "#071113";
+        ctx.strokeStyle = cleansed ? COLORS.Green : selected ? "#d8fff8" : "rgba(131, 170, 169, 0.65)";
+        ctx.lineWidth = selected ? 3 : 1.5;
+        ctx.fillRect(room.x, room.y, room.w, room.h);
+        ctx.strokeRect(room.x, room.y, room.w, room.h);
+
+        ctx.fillStyle = `${color}${selected ? "28" : "18"}`;
+        ctx.fillRect(room.x + 5, room.y + 5, room.w - 10, room.h - 10);
+
+        const hotspot = Math.max(8, Math.min(room.w, room.h) * (0.18 + chamber.instability_score * 0.26));
+        const gradient = ctx.createRadialGradient(
+          room.x + room.w * 0.66,
+          room.y + room.h * 0.5,
+          2,
+          room.x + room.w * 0.66,
+          room.y + room.h * 0.5,
+          hotspot + pulse * 8
+        );
+        gradient.addColorStop(0, `${color}aa`);
+        gradient.addColorStop(0.62, `${color}34`);
+        gradient.addColorStop(1, `${color}00`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(room.x + 5, room.y + 5, room.w - 10, room.h - 10);
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
+        ctx.fillRect(room.x + 12, room.y + room.h - 32, room.w - 24, 6);
+        ctx.fillStyle = color;
+        ctx.fillRect(room.x + 12, room.y + room.h - 32, (room.w - 24) * chamber.instability_score, 6);
+        if (cleansed) {
+          ctx.strokeStyle = "rgba(115, 255, 154, 0.78)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(room.x + 9, room.y + 9, room.w - 18, room.h - 18);
+        }
+        ctx.restore();
+
+        drawDoor(room);
+      });
+
+      ctx.save();
+      ctx.fillStyle = "#83aaa9";
+      ctx.font = "9px Share Tech Mono";
+      ctx.textAlign = "left";
+      ctx.fillText("DOORS: GREEN OPEN / RED DEFLECTED", minX, maxY + 36);
+      ctx.fillText("CLICK A ROOM TO ENTER / VIEW DETAILS", minX, maxY + 50);
+      ctx.restore();
+
+      if (!state.investigationLoopRendered) {
+        state.investigationLoopRendered = true;
+        const loopTask = state.workDayTasks.find(task => task.auto === "loop");
+        if (loopTask) loopTask.done = true;
+        renderTaskPanel();
+      }
+
+      requestAnimationFrame(drawPathwayMap);
+    }
+
+    renderAll();
+    appendTerminal([
+      { type: "system", text: "CRYPTIC CODEX TERMINAL INITIALIZED" },
+      { type: "response", text: `${DATA.dashboard.total_chambers} chambers loaded. Recommendation: ${label(DATA.dashboard.last_observatory_recommendation)}.` },
+      { type: "response", text: "Type help or select a chamber to begin anomaly detection." }
+    ]);
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    setInterval(refreshInstruments, 2200);
+    requestAnimationFrame(drawPathwayMap);
+    terminalInput.focus();
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { initInstruments, STATES } from "../assets/instruments.js";
+
+    const instrumentCanvas = document.querySelector("#instrumentCanvas");
+    const instrumentScene = new THREE.Scene();
+    const instrumentRig = new THREE.Group();
+    const instrumentCamera = new THREE.PerspectiveCamera(34, 1, 0.01, 100);
+    const instrumentRenderer = new THREE.WebGLRenderer({
+      canvas: instrumentCanvas,
+      alpha: true,
+      antialias: true
+    });
+
+    instrumentRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    instrumentRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    instrumentScene.add(instrumentRig);
+    instrumentScene.add(new THREE.AmbientLight(0x7feee3, 0.75));
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    keyLight.position.set(1.2, 1.8, 2.4);
+    instrumentScene.add(keyLight);
+
+    const rimLight = new THREE.PointLight(0x00cfff, 2.4, 5);
+    rimLight.position.set(-1.5, 0.4, 1.2);
+    instrumentScene.add(rimLight);
+
+    instrumentCamera.position.set(0, 0.18, 2.1);
+    instrumentCamera.lookAt(0, 0, 0);
+
+    let instruments = null;
+    let lastSlsForms = 0;
+
+    function resizeInstrumentScene() {
+      const rect = instrumentCanvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      instrumentRenderer.setSize(rect.width, rect.height, false);
+      instrumentCanvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      instrumentCanvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      instrumentCamera.aspect = rect.width / Math.max(1, rect.height);
+      instrumentCamera.updateProjectionMatrix();
+    }
+
+    function makeSkeletonPositions(formCount) {
+      const positions = [];
+      for (let form = 0; form < formCount; form++) {
+        const x = 0.36 + form * 0.14;
+        const y = -0.03;
+        const z = -0.08 - form * 0.03;
+        const joints = [
+          [x, y + 0.22, z], [x, y + 0.14, z], [x, y + 0.05, z],
+          [x - 0.06, y + 0.1, z], [x + 0.06, y + 0.1, z],
+          [x - 0.04, y - 0.04, z], [x + 0.04, y - 0.04, z],
+          [x - 0.08, y + 0.02, z], [x + 0.08, y + 0.02, z],
+          [x - 0.06, y - 0.15, z], [x + 0.06, y - 0.15, z]
+        ];
+        joints.forEach(([px, py, pz]) => positions.push(new THREE.Vector3(px, py, pz)));
+      }
+      return positions;
+    }
+
+    function syncInstrument(detail) {
+      if (!instruments) return;
+      if (detail.id === "emf") {
+        const level = Math.min(1, Math.max(0, detail.raw / 10));
+        instruments.emf.setEMFLevel(level);
+        instruments.emf.setState(detail.status === 2
+          ? STATES.ANOMALY_WARNING
+          : detail.active ? STATES.SCANNING : STATES.IDLE);
+        if (detail.action === "toggle") instruments.emf.depressButton("button_hold");
+      }
+
+      if (detail.id === "sls") {
+        const forms = Math.max(0, Math.round(detail.raw));
+        instruments.sls.setScanActive(detail.active || forms > 0);
+        instruments.sls.setFormCount(forms);
+        if (detail.action === "toggle") instruments.sls.depressTrigger();
+        if (forms !== lastSlsForms) {
+          if (forms > 0) instruments.sls.showLatticeOverlay(makeSkeletonPositions(forms), instrumentRig);
+          else instruments.sls.clearLatticeOverlay(instrumentRig);
+          lastSlsForms = forms;
+        }
+      }
+    }
+
+    window.addEventListener("codex-instrument-reading", event => syncInstrument(event.detail));
+    window.addEventListener("resize", resizeInstrumentScene);
+
+    async function bootInstrumentModels() {
+      resizeInstrumentScene();
+      instruments = await initInstruments(instrumentRig, "../assets");
+      instruments.emf.setScale(0.9);
+      instruments.emf.setPosition(-0.38, -0.08, 0);
+      instruments.sls.setScale(0.9);
+      instruments.sls.setPosition(0.38, -0.08, 0);
+      window.codexInstrumentControls = { ...instruments, scene: instrumentRig };
+    }
+
+    function animateInstrumentScene() {
+      requestAnimationFrame(animateInstrumentScene);
+      const t = performance.now() * 0.001;
+      instrumentRig.rotation.y = Math.sin(t * 0.35) * 0.08;
+      instruments?.emf.update();
+      instruments?.sls.update();
+      instrumentRenderer.render(instrumentScene, instrumentCamera);
+    }
+
+    bootInstrumentModels().catch(error => {
+      console.error("[CrypticCodex] Instrument model boot failed", error);
+    });
+    animateInstrumentScene();
+  </script>
+</body>
+</html>
