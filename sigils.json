@@ -1,0 +1,52 @@
+[
+    {
+        "sigil": "Observe",
+        "glyph": "\u25c9",
+        "intent": "reveal_state",
+        "target_type": "any",
+        "function_route": "Integral Ecology Memory",
+        "effect_type": "reveal",
+        "intensity": "gentle",
+        "safety_rule": "non_coercive"
+    },
+    {
+        "sigil": "Align",
+        "glyph": "\u25b3",
+        "intent": "improve_threshold_alignment",
+        "target_type": "threshold",
+        "function_route": "Threshold Gate Ecology",
+        "effect_type": "align",
+        "intensity": "moderate",
+        "safety_rule": "non_coercive"
+    },
+    {
+        "sigil": "Disperse",
+        "glyph": "\u223f",
+        "intent": "reduce_pressure_saturation",
+        "target_type": "corridor",
+        "function_route": "Pressure Pathways",
+        "effect_type": "disperse",
+        "intensity": "moderate",
+        "safety_rule": "non_coercive"
+    },
+    {
+        "sigil": "Anchor",
+        "glyph": "\u2b16",
+        "intent": "increase_stabilization_diffusion",
+        "target_type": "chamber",
+        "function_route": "Stabilization Diffusion",
+        "effect_type": "stabilize",
+        "intensity": "gentle",
+        "safety_rule": "non_coercive"
+    },
+    {
+        "sigil": "Echo",
+        "glyph": "\u2301",
+        "intent": "inspect_recursive_traffic",
+        "target_type": "echo",
+        "function_route": "Recursive Traffic",
+        "effect_type": "inspect",
+        "intensity": "gentle",
+        "safety_rule": "non_coercive"
+    }
+]
